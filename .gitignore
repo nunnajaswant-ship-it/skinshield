@@ -1,0 +1,30 @@
+# Data and model artefacts (too large / licensed separately)
+data/
+*.zip
+*.npy
+*.npz
+*.pt
+*.pth
+*.onnx
+*.engine
+*.safetensors
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+env/
+
+# Secrets
+.env
+*.env
+HF_TOKEN
+
+# OS / editor
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/

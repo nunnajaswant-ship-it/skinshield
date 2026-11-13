@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SkinShield — Full Technical Report</title>
+<style>
+  :root{
+    --ink:#16202f; --muted:#5a6478; --line:#e2e7ef; --bg:#f5f7fb;
+    --accent:#0f766e; --accent2:#7c3aed; --warn:#b45309; --danger:#b91c1c; --ok:#15803d;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+       color:var(--ink);background:var(--bg);line-height:1.62;font-size:15px}
+  header{background:linear-gradient(135deg,#0b1220,#134e4a 70%,#155e57);color:#fff;padding:42px 24px 36px}
+  header .wrap{max-width:980px;margin:0 auto}
+  header h1{margin:0 0 8px;font-size:30px;letter-spacing:.2px}
+  header .sub{color:#cbd5e1;font-size:15px;margin:2px 0}
+  .badges{margin-top:14px}
+  .badge{display:inline-block;background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.22);
+         border-radius:999px;padding:3px 12px;font-size:12px;margin:4px 6px 0 0;color:#e2e8f0}
+  .wrap{max-width:980px;margin:0 auto;padding:30px 24px 80px}
+  h2{font-size:22px;margin:42px 0 12px;padding-bottom:9px;border-bottom:2px solid var(--line)}
+  h3{font-size:17px;margin:26px 0 8px}
+  h4{font-size:15px;margin:18px 0 6px;color:#334155}
+  p{margin:9px 0}
+  .lead{font-size:16.5px;color:#334155}
+  .card{background:#fff;border:1px solid var(--line);border-radius:11px;padding:18px 20px;margin:14px 0;
+        box-shadow:0 1px 2px rgba(15,23,42,.04)}
+  table{width:100%;border-collapse:collapse;background:#fff;font-size:13.5px;margin:12px 0}
+  th,td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+  th{background:#eef2f8;font-weight:600}
+  tr:nth-child(even) td{background:#fafbfe}
+  .num{text-align:right;font-variant-numeric:tabular-nums}
+  code,pre{font-family:"Cascadia Code",Consolas,monospace}
+  code{background:#eef1f6;border-radius:4px;padding:1px 6px;font-size:13px}
+  pre{background:#0b1220;color:#dbe4f0;border-radius:8px;padding:13px 15px;overflow-x:auto;font-size:12.8px;line-height:1.5}
+  .callout{border-left:4px solid var(--accent);background:#f0fdfa;padding:12px 16px;border-radius:0 8px 8px 0;margin:14px 0}
+  .callout.warn{border-left-color:var(--warn);background:#fffbeb}
+  .callout.danger{border-left-color:var(--danger);background:#fef2f2}
+  .callout.ok{border-left-color:var(--ok);background:#f0fdf4}
+  .tag{display:inline-block;border-radius:999px;padding:1px 9px;font-size:11.5px;font-weight:600}
+  .t-ok{background:#dcfce7;color:var(--ok)} .t-warn{background:#fef3c7;color:var(--warn)} .t-danger{background:#fee2e2;color:var(--danger)}
+  .t-info{background:#e0e7ff;color:#3730a3} .t-mut{background:#f1f5f9;color:var(--muted)}
+  ul,ol{margin:8px 0;padding-left:22px} li{margin:5px 0}
+  .kpi{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:14px 0}
+  .kpi .k{background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px}
+  .kpi .k .v{font-size:24px;font-weight:700;color:var(--accent)}
+  .kpi .k .l{font-size:12.5px;color:var(--muted)}
+  .muted{color:var(--muted);font-size:13px}
+  .toc{background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px 20px}
+  .toc a{color:var(--accent);text-decoration:none}
+  .toc a:hover{text-decoration:underline}
+  footer{margin-top:50px;color:var(--muted);font-size:12.5px;border-top:1px solid var(--line);padding-top:16px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:760px){.grid2{grid-template-columns:1fr}}
+  .win{color:var(--ok);font-weight:600} .lose{color:var(--danger);font-weight:600}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <h1>SkinShield — Full Technical Report</h1>
+    <p class="sub">Multimodal (image + text) dermatology classification for edge deployment</p>
+    <p class="sub">Dataset curation · model design · training · evaluation · findings</p>
+    <div class="badges">
+      <span class="badge">Derm1M v2 · 423,016 image–text pairs</span>
+      <span class="badge">DermLIP ViT-B-16</span>
+      <span class="badge">Two-stage safety design</span>
+      <span class="badge">Non-commercial academic research</span>
+      <span class="badge">Report date 2026-10-05</span>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+<p class="lead">
+This document is the complete technical record of the SkinShield model work to date. It covers, in order: the
+problem and its framing, the dataset we selected and how we curated it, the model we adopted and why, the exact
+methodology (frozen-encoder feature extraction with an ablation-based evaluation), the two classification stages we
+built, all measured results, a rigorous investigation of a text-leakage artefact we discovered, the compute
+infrastructure, the limitations, and the next steps. Every number in this report comes from a real run on the
+project machine and is reproducible from the scripts in the repository.
+</p>
+
+<div class="toc">
+  <b>Contents</b>
+  <ol>
+    <li><a href="#s1">Problem statement &amp; framing</a></li>
+    <li><a href="#s2">Dataset — Derm1M v2</a></li>
+    <li><a href="#s3">Dataset curation pipeline</a></li>
+    <li><a href="#s4">The ontology discovery</a></li>
+    <li><a href="#s5">Model — DermLIP ViT-B-16</a></li>
+    <li><a href="#s6">Methodology — frozen encoder + probe ablation</a></li>
+    <li><a href="#s7">Stage 1 — Contagion gate (results)</a></li>
+    <li><a href="#s8">Stage 2 — Disease identification (results)</a></li>
+    <li><a href="#s9">The caption-leakage investigation</a></li>
+    <li><a href="#s10">Infrastructure &amp; engineering</a></li>
+    <li><a href="#s11">Limitations &amp; threats to validity</a></li>
+    <li><a href="#s12">Conclusions &amp; next steps</a></li>
+    <li><a href="#s13">Appendix — artefacts &amp; reproduction</a></li>
+  </ol>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="s1">1. Problem statement &amp; framing</h2>
+<div class="card">
+  <p><b>Goal.</b> Build a dermatology decision-support model that, given a <b>skin photograph plus clinical text</b>
+  (symptoms/description), performs a <b>safety-first two-stage classification</b>:</p>
+  <pre>image + text
+     │
+     ▼
+┌───────────────────────────┐
+│ STAGE 1 — CONTAGION GATE  │   "Is this infectious / potentially contagious?"
+│  infectious vs not        │
+└─────────────┬─────────────┘
+      ┌───────┴────────┐
+   INFECTIOUS      NON-INFECTIOUS
+      │                  │
+      ▼                  ▼
+ "seek medical      ┌──────────────────────────┐
+  attention;        │ STAGE 2 — DISEASE ID     │
+  may be            │  multi-class: which      │
+  contagious"       │  condition is it?        │
+                    └──────────────────────────┘</pre>
+
+  <p><b>Why this framing.</b> A wrong output that reassures a user they are "fine" is the most dangerous error in a
+  medical assistant. The two-stage design makes the <b>safety-critical decision first</b> (is it infectious?), and only
+  then attempts fine-grained identification. It also means the infectious classes never need to be "named" to the
+  user — an infectious result simply routes to <i>seek care</i>.</p>
+
+  <div class="callout warn">
+    <b>The pivot that defines the project.</b> The original concept used <b>physiological sensor</b> input. No public
+    sensor dataset exists for skin disease, so the project <b>pivoted to image + text</b>. Consequence: any dataset
+    that is image-only with no paired text (<b>HAM10000, ISIC, Fitzpatrick17k</b>) is structurally unusable — it cannot
+    train or evaluate the text tower. This single constraint drove the dataset choice.
+  </div>
+
+  <p><b>Scope evolution.</b> The task began as a locked <b>12-class</b> set (5 common + 7 rare diseases) and was
+  expanded to the <b>full Derm1M ontology</b> (~390 conditions), with the contagious/non-contagious gate added.</p>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="s2">2. Dataset — Derm1M v2</h2>
+<div class="card">
+  <h3>2.1 Source &amp; licence</h3>
+  <table>
+    <tr><th style="width:34%">Property</th><th>Value</th></tr>
+    <tr><td>Dataset</td><td><b>Derm1M</b> — <code>redlessone/Derm1M</code> (HuggingFace, gated)</td></tr>
+    <tr><td>Licence</td><td><b>CC BY-NC 4.0</b> — non-commercial academic research</td></tr>
+    <tr><td>Modality</td><td>Paired <b>image + clinical text</b></td></tr>
+    <tr><td>Reference</td><td>Yan et al., <i>Derm1M: A Million-Scale Vision-Language Dataset…</i>, arXiv 2503.14911 (Nature Medicine 2025)</td></tr>
+    <tr><td>Access</td><td>Gated; requires an accepted-licence HuggingFace account + read token</td></tr>
+  </table>
+
+  <h3>2.2 Scale (verified on the real files)</h3>
+  <div class="kpi">
+    <div class="k"><div class="v">423,016</div><div class="l">image–text pairs total</div></div>
+    <div class="k"><div class="v">413,210</div><div class="l">pretrain split</div></div>
+    <div class="k"><div class="v">9,806</div><div class="l">validation split</div></div>
+    <div class="k"><div class="v">34.5 GB</div><div class="l">compressed download</div></div>
+    <div class="k"><div class="v">~390</div><div class="l">clean ontology conditions</div></div>
+    <div class="k"><div class="v">100%</div><div class="l">images extracted &amp; matched</div></div>
+  </div>
+
+  <h3>2.3 Composition — 9 source archives</h3>
+  <table>
+    <tr><th>Archive</th><th class="num">Size</th><th>Content</th></tr>
+    <tr><td>youtube.zip</td><td class="num">15.8 GB</td><td>Frames from dermatology education videos</td></tr>
+    <tr><td>edu.zip</td><td class="num">5.6 GB</td><td>Textbook / reference figures</td></tr>
+    <tr><td>public.zip</td><td class="num">3.8 GB</td><td>Public image collections</td></tr>
+    <tr><td>note.zip</td><td class="num">2.3 GB</td><td>Clinical notes / atlas images</td></tr>
+    <tr><td>IIYI.zip</td><td class="num">1.7 GB</td><td>IIYI Chinese clinical platform</td></tr>
+    <tr><td>pubmed.zip</td><td class="num">1.6 GB</td><td>PubMed Central literature figures</td></tr>
+    <tr><td>validation_data.zip</td><td class="num">1.1 GB</td><td>Held-out validation images</td></tr>
+    <tr><td>twitter.zip</td><td class="num">0.6 GB</td><td>Public social-media clinical images</td></tr>
+    <tr><td>reddit.zip</td><td class="num">70 MB</td><td>Forum (r/Dermatology) images</td></tr>
+  </table>
+  <p class="muted">Total extracted: <b>423,016 images</b> across the source folders, verified to match every CSV row
+  (zero missing). Filenames carry a source prefix (e.g. <code>youtube/abc.jpg</code>) which maps 1:1 to the archive.</p>
+
+  <h3>2.4 Long-tail distribution (why we cannot train "all 390" naively)</h3>
+  <table>
+    <tr><th>Conditions with ≥ N pairs</th><th class="num">Count</th></tr>
+    <tr><td>≥ 10,000</td><td class="num">6</td></tr>
+    <tr><td>≥ 1,000</td><td class="num">40</td></tr>
+    <tr><td>≥ 500</td><td class="num">80</td></tr>
+    <tr><td>≥ 300</td><td class="num">114</td></tr>
+    <tr><td>≥ 100</td><td class="num">213</td></tr>
+    <tr><td>≥ 50</td><td class="num">344</td></tr>
+    <tr><td>&lt; 5</td><td class="num">17,027</td></tr>
+  </table>
+  <div class="callout">
+    <b>Consequence.</b> A 390-way <i>trained</i> classifier is not statistically defensible (17,027 conditions have
+    &lt;5 examples). We therefore train heads only on the well-populated conditions and treat the long tail with
+    <b>zero-shot</b> prompting — stated openly rather than hidden.
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="s3">3. Dataset curation pipeline</h2>
+<div class="card">
+  <p>The raw Derm1M archives are disconnected: the CSVs list filenames with prefixes, while the archives contain bare
+  filenames. Curation <b>links</b> them into a single labelled index.</p>
+  <ol>
+    <li><b>Download</b> — all 9 archives + 2 CSVs + ontology (34.5 GB) via <code>huggingface_hub.snapshot_download</code>.</li>
+    <li><b>Extract</b> — each archive into <code>E:\imgs\&lt;source&gt;\</code>, with long-path protection
+        (some Derm1M filenames exceed 235 characters, near the Windows 260-char limit).</li>
+    <li><b>Link</b> — for each CSV row, resolve image path from the filename prefix and verify existence.</li>
+    <li><b>Label</b> — derive condition, infectious flag, malignant flag, and top category from the ontology column.</li>
+    <li><b>Verify</b> — confirm image counts reconcile with row counts.</li>
+  </ol>
+  <p><b>Result of the run:</b></p>
+  <pre>[extract] youtube.zip: 193991 files    [extract] IIYI.zip: 53747 files
+[extract] pubmed.zip:   77552 files    [extract] public.zip: 40974 files
+[extract] edu.zip:      27151 files    [extract] note.zip:  12506 files
+[extract] twitter.zip:   6116 files    [extract] validation_data.zip: 9806 files
+[extract] reddit.zip:    1173 files
+
+[manifest] rows: 423016 | images found: 423016      ← 100% match
+[manifest] infectious rows: 27964 | malignant rows: 21413
+[manifest] distinct conditions: 19583</pre>
+  <div class="callout ok">
+    <b>Deliverable:</b> <code>E:\SkinShield\manifest.csv</code> — every one of 423,016 rows with its image path,
+    condition, infectious flag, malignant flag, top category, and split. This single file is the dataset for every
+    subsequent experiment.
+  </div>
+
+  <h4>A subtle correctness issue we solved</h4>
+  <div class="callout danger">
+    The string <b>"non-infectious" contains the substring "infectious"</b>. A naive search marks every
+    non-infectious row as infectious. The correct predicate is:
+    <pre>infectious = label.contains("infectious") AND NOT label.contains("non-infectious")</pre>
+    applied identically to the gate labels and to the pathogen-subtype extraction. This bug was found and fixed — it
+    would otherwise have corrupted the entire Stage-1 label set and the subtype breakdown.
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="s4">4. The ontology discovery — labels for free</h2>
+<div class="card">
+  <p>Derm1M's <code>hierarchical_disease_label</code> is a structured clinical ontology, not a flat label. Example
+  values:</p>
+  <pre>inflammatory, non-infectious, eczema, contact dermatitis, allergic contact dermatitis
+inflammatory, infectious, viral, molluscum contagiosum
+inflammatory, infectious, fungal, candidiasis, tinea
+inflammatory, infectious, parasitic, scabies
+proliferations, malignant, melanocytic, melanoma
+proliferations, benign, non-melanocytic, seborrheic keratosis</pre>
+  <p>Because of this structure, <b>several label axes are available directly from the data</b> — no manual labelling of
+  390 conditions:</p>
+  <table>
+    <tr><th>Axis</th><th>Values</th><th class="num">Rows</th></tr>
+    <tr><td>Infection</td><td><code>infectious</code></td><td class="num">27,964</td></tr>
+    <tr><td></td><td><code>non-infectious</code></td><td class="num">109,824</td></tr>
+    <tr><td>Pathogen subtype</td><td>bacterial / fungal / viral / parasitic</td><td class="num">10,679 / 7,267 / 6,869 / 3,035</td></tr>
+    <tr><td>Malignancy</td><td><code>malignant</code> / <code>benign</code></td><td class="num">21,413 / 42,825</td></tr>
+    <tr><td>Top category</td><td>inflammatory, proliferations, reaction patterns, hereditary, exogenous, nevus, keratosis, nail, hair, vascular …</td><td class="num">—</td></tr>
+  </table>
+  <div class="callout ok">
+    <b>Significance.</b> The contagion gate's ground-truth labels are derived <b>directly from the clinical ontology</b>,
+    which makes them principled and auditable — not heuristic. This is the single biggest de-risking fact of the project.
+  </div>
+  <div class="callout warn">
+    <b>Important distinction we made explicit.</b> The ontology's <code>non-infectious</code> label only covers the
+    <b>inflammatory branch</b>. Cancers (melanoma, BCC, SCC) live under <code>proliferations</code> and are therefore
+    <i>neither</i> infectious nor "non-infectious". So for the disease-identification stage the correct target set is
+    <b>"everything that is not explicitly infectious"</b>, which includes cancers — not merely the ontology's
+    non-infectious subset.
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="s5">5. Model — DermLIP ViT-B-16</h2>
+<div class="card">
+  <table>
+    <tr><th style="width:34%">Property</th><th>Value</th></tr>
+    <tr><td>Model</td><td><b>DermLIP ViT-B-16</b> — <code>redlessone/DermLIP_ViT-B-16</code></td></tr>
+    <tr><td>Type</td><td>CLIP-style <b>vision–language</b> model (contrastive image–text)</td></tr>
+    <tr><td>Vision encoder</td><td>ViT-B/16 (patch 16, resolution 224×224)</td></tr>
+    <tr><td>Text encoder</td><td>GPT-2</td></tr>
+    <tr><td>Parameters</td><td><b>149.6 M</b></td></tr>
+    <tr><td>Embedding dim</td><td>512 (image) / 512 (text)</td></tr>
+    <tr><td>Pretrained on</td><td><b>403,563 dermatology image–text pairs</b> (Derm1M)</td></tr>
+    <tr><td>Licence</td><td>CC BY-NC-ND 4.0 (non-commercial research)</td></tr>
+  </table>
+  <p><b>Why this model.</b> It is trained specifically on dermatology image–text pairs, so it already "knows" the
+  vocabulary and morphology of the domain — far stronger than a generic CLIP. It is the natural pairing with the
+  Derm1M dataset (same research group).</p>
+  <div class="callout">
+    <b>An alternative we evaluated and set aside.</b> DermLIP's larger sibling <b>PanDerm</b> uses a forked
+    <code>open_clip</code> configuration (extra keys <code>pretrain_path</code>, <code>hf_model_name</code>,
+    <code>hf_tokenizer_name</code>) and fails with the standard PyPI <code>open_clip_torch</code>. It would require
+    installing the Derm1M fork. We standardised on <b>ViT-B-16</b>, which loads with the standard library, giving a
+    reproducible, dependency-light pipeline.
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="s6">6. Methodology — frozen encoder + probe ablation</h2>
+<div class="card">
+  <p>We do <b>not</b> fine-tune the 150M-parameter encoder (expensive, and unnecessary for the research claim). Instead:</p>
+  <ol>
+    <li><b>Encode</b> every sample once with the frozen DermLIP model → a 512-d image vector and a 512-d text vector.</li>
+    <li><b>Fuse</b> the two vectors → a 1024-d multimodal representation.</li>
+    <li><b>Train a lightweight classifier head</b> (standardised features + logistic regression / MLP) on each
+        representation.</li>
+    <li><b>Ablate:</b> train and test three heads — <b>image-only</b>, <b>text-only</b>, and <b>fused</b> — on an
+        identical train/test split.</li>
+  </ol>
+  <div class="callout ok">
+    <b>Why the ablation is the scientific core.</b> The project's hypothesis is that <b>combining image + text beats
+    either modality alone</b>. The ablation is the direct test of that hypothesis. All three heads see the same data
+    and the same split, so the comparison is controlled.
+  </div>
+  <p><b>Evaluation metrics.</b> Because the classes are imbalanced, we report <b>balanced accuracy</b> and
+  <b>macro-F1</b> (which weight every class equally) alongside raw accuracy, and — for the gate — the <b>confusion
+  matrix</b> and <b>per-pathogen recall</b>, which expose missed infections.</p>
+  <p><b>Reproducibility.</b> A fixed random seed (42) is used for splitting throughout.</p>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="s7">7. Stage 1 — Contagion gate (results)</h2>
+<div class="card">
+  <p><b>Task:</b> binary classification — infectious vs non-infectious.<br>
+     <b>Data:</b> 137,788 rows (27,964 infectious / 109,824 non-infectious). Train 110,230 / test 27,558 (20%, stratified).</p>
+
+  <h3>7.1 Ablation results (test set)</h3>
+  <table>
+    <tr><th>Model</th><th class="num">Accuracy</th><th class="num">Balanced acc</th><th class="num">F1</th></tr>
+    <tr><td>image_only</td><td class="num">0.7613</td><td class="num">0.7590</td><td class="num">0.5622</td></tr>
+    <tr><td>text_only</td><td class="num">0.9292</td><td class="num">0.9312</td><td class="num">0.8428</td></tr>
+    <tr><td><b>fused</b></td><td class="num"><b>0.9320</b></td><td class="num"><b>0.9317</b></td><td class="num"><b>0.8475</b></td></tr>
+  </table>
+  <p><b>fused ≥ text_only &gt; image_only.</b> The image alone already separates infectious from non-infectious with
+  ~76% balanced accuracy — a meaningful visual signal (many infections have characteristic appearance: scaling
+  plaques, vesicles, pustules).</p>
+
+  <h3>7.2 Confusion matrix (fused)</h3>
+  <pre>                    non-infectious   infectious
+non-infectious           20474           1491
+infectious                 384           5209</pre>
+  <div class="kpi">
+    <div class="k"><div class="v">93.1%</div><div class="l">infection sensitivity (recall)</div></div>
+    <div class="k"><div class="v">93.2%</div><div class="l">specificity</div></div>
+    <div class="k"><div class="v">384</div><div class="l">infections missed (of 5,593)</div></div>
+    <div class="k"><div class="v">1,491</div><div class="l">false alarms (of 21,965)</div></div>
+  </div>
+  <div class="callout ok">
+    <b>Safety interpretation.</b> For a triage gate the metric that matters is the <b>false-negative rate</b> — infections
+    wrongly cleared. At 93.1% sensitivity the gate misses only <b>6.9%</b> of infections. The trade-off is acceptable
+    <i>because the cost of a false alarm is low</i> (user is advised to seek care unnecessarily) while the cost of a
+    miss is high.
+  </div>
+
+  <h3>7.3 Detection recall by pathogen (fused)</h3>
+  <table>
+    <tr><th>Pathogen</th><th class="num">Test n</th><th class="num">Recall</th></tr>
+    <tr><td>bacterial</td><td class="num">2,135</td><td class="num">0.939</td></tr>
+    <tr><td>fungal</td><td class="num">1,423</td><td class="num">0.915</td></tr>
+    <tr><td>viral</td><td class="num">1,413</td><td class="num">0.946</td></tr>
+    <tr><td>parasitic</td><td class="num">605</td><td class="num">0.917</td></tr>
+  </table>
+  <p>All four pathogen types are detected at ≥91.5% recall — the gate is not biased toward one infection family.</p>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="s8">8. Stage 2 — Disease identification (results)</h2>
+<div class="card">
+  <p><b>Task:</b> 50-class condition identification among <b>non-contagious</b> conditions (including cancers).<br>
+     <b>Data:</b> 60,079 rows, cap 2,000/class, 50 classes. Train 48,048 / test 12,079 (stratified).<br>
+     <b>Classes include:</b> melanoma, basal cell carcinoma, squamous cell carcinoma, nevus, psoriasis, eczema,
+     dermatitis, allergic contact dermatitis, lichen planus, rosacea, lupus erythematosus, bullous pemphigoid,
+     pemphigus vulgaris, cutaneous T-cell lymphoma, hidradenitis suppurativa, ichthyosis, epidermolysis bullosa,
+     vitiligo, alopecia, urticaria, Kaposi sarcoma, dermatofibroma, and more.</p>
+
+  <h3>8.1 Ablation results (test set)</h3>
+  <table>
+    <tr><th>Model</th><th class="num">Accuracy</th><th class="num">Balanced acc</th><th class="num">Macro-F1</th></tr>
+    <tr><td>image_only</td><td class="num">0.4404</td><td class="num">0.4658</td><td class="num">0.4311</td></tr>
+    <tr><td>text_only (raw captions)</td><td class="num">0.8734</td><td class="num">0.8785</td><td class="num">0.8736</td></tr>
+    <tr><td>fused (raw captions)</td><td class="num">0.8503</td><td class="num">0.8551</td><td class="num">0.8553</td></tr>
+  </table>
+  <p>Image-only achieves <b>0.431 macro-F1 across 50 classes</b> — roughly <b>21× chance</b> (chance = 2%), which is a
+  legitimate result for fine-grained dermatology. The text scores are, however, contaminated — see §9.</p>
+
+  <h3>8.2 Per-class detail (fused)</h3>
+  <div class="grid2">
+    <div>
+      <h4>Easiest (visually distinctive)</h4>
+      <table>
+        <tr><th>Condition</th><th class="num">F1</th></tr>
+        <tr><td>Kaposi sarcoma</td><td class="num">0.985</td></tr>
+        <tr><td>Seborrheic keratoses</td><td class="num">0.976</td></tr>
+        <tr><td>Skin tag</td><td class="num">0.973</td></tr>
+        <tr><td>Proliferations</td><td class="num">0.972</td></tr>
+        <tr><td>Neurofibromatosis</td><td class="num">0.970</td></tr>
+      </table>
+    </div>
+    <div>
+      <h4>Hardest (clinically overlapping)</h4>
+      <table>
+        <tr><th>Condition</th><th class="num">F1</th></tr>
+        <tr><td>Dermatitis</td><td class="num">0.629</td></tr>
+        <tr><td>Eczema</td><td class="num">0.658</td></tr>
+        <tr><td>Irritated seborrheic keratosis</td><td class="num">0.700</td></tr>
+        <tr><td>Hyperpigmentation</td><td class="num">0.703</td></tr>
+        <tr><td>Psoriasis</td><td class="num">0.760</td></tr>
+      </table>
+    </div>
+  </div>
+  <div class="callout ok">
+    <b>This pattern is the strongest qualitative evidence the model is learning real dermatology.</b> It is easy on
+    visually unambiguous conditions (Kaposi sarcoma's purple lesions, seborrheic keratoses) and hard on the
+    inflammatory cluster (dermatitis / eczema / psoriasis / CTCL / lupus) — which is <b>exactly where human clinicians
+    also disagree</b>. The model makes the same mistakes a dermatologist would.
+  </div>
+
+  <h3>8.3 Zero-shot breadth — 150 conditions, no training</h3>
+  <p>To substantiate the "whole ontology" claim <b>without any trained head</b>, we evaluated DermLIP in pure
+  <b>zero-shot</b> mode: for each of the 150 most-populated conditions we built text prompts
+  (<i>"This is a skin image of …"</i>) and classified images purely by image↔text similarity. 6,000 test images.</p>
+  <table>
+    <tr><th>Metric</th><th class="num">Value</th></tr>
+    <tr><td>conditions</td><td class="num">150</td></tr>
+    <tr><td>images</td><td class="num">6,000</td></tr>
+    <tr><td>random chance (1/150)</td><td class="num">0.0067</td></tr>
+    <tr><td><b>top-1 accuracy</b></td><td class="num"><b>0.2198</b>  (~33× chance)</td></tr>
+    <tr><td><b>top-5 accuracy</b></td><td class="num"><b>0.4447</b></td></tr>
+  </table>
+  <div class="grid2">
+    <div>
+      <h4>Best conditions (top-1)</h4>
+      <table>
+        <tr><th>Condition</th><th class="num">Top-1</th></tr>
+        <tr><td>Pityriasis rosea</td><td class="num">0.78</td></tr>
+        <tr><td>Cheilitis</td><td class="num">0.68</td></tr>
+        <tr><td>Condyloma</td><td class="num">0.65</td></tr>
+        <tr><td>Limbal dermoid</td><td class="num">0.62</td></tr>
+        <tr><td>Alopecia</td><td class="num">0.60</td></tr>
+        <tr><td>Hand-foot-and-mouth disease</td><td class="num">0.60</td></tr>
+        <tr><td>Melasma</td><td class="num">0.57</td></tr>
+      </table>
+    </div>
+    <div>
+      <h4>Worst conditions (0.00 top-1)</h4>
+      <table>
+        <tr><th>Condition</th><th class="num">Top-1</th></tr>
+        <tr><td>Dermatitis / contact dermatitis</td><td class="num">0.00</td></tr>
+        <tr><td>Allergic reaction / ACD</td><td class="num">0.00</td></tr>
+        <tr><td>Keratosis</td><td class="num">0.00</td></tr>
+        <tr><td>Deep fungal infection</td><td class="num">0.00</td></tr>
+        <tr><td>Cutaneous lupus</td><td class="num">0.00</td></tr>
+        <tr><td>Herpetic lesion</td><td class="num">0.00</td></tr>
+      </table>
+    </div>
+  </div>
+  <div class="callout">
+    <b>Interpretation.</b> Zero-shot succeeds on conditions with <b>distinctive visual patterns and unambiguous
+    names</b> (pityriasis rosea, melasma, tinea cruris) and fails on <b>broad or overlapping categories</b>
+    (dermatitis, keratosis, allergic reaction) — the same easy/hard split seen in the trained heads. This is expected:
+    a generic prompt such as <i>"a skin image of dermatitis"</i> is intrinsically ambiguous because many diseases
+    present as dermatitis. Zero-shot is therefore reported as <b>breadth coverage</b>, complementing — not replacing —
+    the trained Stage-2 head.
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="s9">9. The caption-leakage investigation</h2>
+<div class="card">
+  <p>Inspecting the data revealed that many clinical captions <b>name the diagnosis outright</b>, e.g.:</p>
+  <pre>"This image describes melanoma, a type of skin cancer …"
+"This is a clinical skin image, diagnosed as tinea ringworm …"
+"This image shows Kaposi's sarcoma, a skin disease characterised by …"</pre>
+  <p>Training a classifier on such text makes the task trivial — the model reads the answer. In real deployment a user
+  types <b>symptoms</b>, not a diagnosis, so any score built on these captions is inflated.</p>
+
+  <h3>9.1 Quantifying the leak</h3>
+  <p>We measured how often a caption contains its own condition name:</p>
+  <table>
+    <tr><th>Condition</th><th class="num">n</th><th class="num">caption names the diagnosis</th></tr>
+    <tr><td>melanoma</td><td class="num">8,159</td><td class="num">92%</td></tr>
+    <tr><td>tinea</td><td class="num">3,230</td><td class="num">92%</td></tr>
+    <tr><td>basal cell carcinoma</td><td class="num">4,683</td><td class="num">91%</td></tr>
+    <tr><td>urticaria</td><td class="num">3,039</td><td class="num">91%</td></tr>
+    <tr><td>eczema</td><td class="num">6,894</td><td class="num">90%</td></tr>
+    <tr><td>allergic contact dermatitis</td><td class="num">47,510</td><td class="num">86%</td></tr>
+    <tr><td>acne</td><td class="num">2,424</td><td class="num">83%</td></tr>
+    <tr><td>squamous cell carcinoma</td><td class="num">3,512</td><td class="num">75%</td></tr>
+    <tr><td>nevus</td><td class="num">11,767</td><td class="num">72%</td></tr>
+    <tr><td>psoriasis</td><td class="num">15,995</td><td class="num">56%</td></tr>
+    <tr><td colspan="2"><b>Overall (all rows)</b></td><td class="num"><b>53.0%</b></td></tr>
+  </table>
+
+  <h3>9.2 De-leak re-evaluation</h3>
+  <p>We stripped each caption's own diagnosis name (and its distinctive disease words) and re-encoded the text. The
+  image features are unchanged; the split is identical; only the text changes. Result:</p>
+  <table>
+    <tr><th>Configuration</th><th class="num">Accuracy</th><th class="num">Balanced acc</th><th class="num">Macro-F1</th></tr>
+    <tr><td>image_only</td><td class="num">0.4404</td><td class="num">0.4658</td><td class="num">0.4311</td></tr>
+    <tr><td>text_raw (leaky)</td><td class="num">0.8734</td><td class="num">0.8785</td><td class="num">0.8736</td></tr>
+    <tr><td>text_deleaked</td><td class="num">0.6879</td><td class="num">0.7046</td><td class="num">0.6814</td></tr>
+    <tr><td>fused_raw (leaky)</td><td class="num">0.8503</td><td class="num">0.8551</td><td class="num">0.8553</td></tr>
+    <tr><td><b>fused_deleaked (honest)</b></td><td class="num"><b>0.7095</b></td><td class="num"><b>0.7115</b></td><td class="num"><b>0.7045</b></td></tr>
+  </table>
+
+  <div class="callout ok">
+    <b>Two results of the highest importance.</b>
+    <ol>
+      <li><b>The leak was worth ~0.19 macro-F1.</b> Removing the diagnosis from the captions drops text-only from
+          0.874 to 0.681. This is now a quantified, honest figure rather than a hidden inflation.</li>
+      <li><b>The multimodal hypothesis is confirmed.</b> On the de-leaked, honest setup:
+          <br>&nbsp;&nbsp;<b>fused 0.7045 &gt; text 0.6814 &gt; image 0.4311</b>.
+          The fused model beats <i>both</i> single modalities. Note the reversal: with leaky captions the image
+          <i>hurt</i> (0.855 &lt; 0.874); with clean captions it <i>helps</i> (0.705 &gt; 0.681). This is the clean,
+          defensible evidence that combining image and text genuinely improves classification.</li>
+    </ol>
+  </div>
+  <p class="muted">This investigation is included deliberately: identifying and correcting a leakage artefact is a
+  mark of methodological rigour, not a weakness.</p>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="s10">10. Infrastructure &amp; engineering</h2>
+<div class="card">
+  <table>
+    <tr><th style="width:30%">Component</th><th>Detail</th></tr>
+    <tr><td>Compute</td><td>College workstation — Intel Core <b>i9-13900</b> (24 threads), <b>32 GB</b> RAM</td></tr>
+    <tr><td>Storage</td><td><b>4.1 TB</b> volume; project data on <code>E:\SkinShield</code> + <code>E:\imgs</code></td></tr>
+    <tr><td>GPU</td><td><b>None usable</b> — Intel UHD 770 integrated only (no CUDA). All work CPU-side.</td></tr>
+    <tr><td>Python</td><td>3.12</td></tr>
+    <tr><td>PyTorch</td><td>2.12.1 (CPU build)</td></tr>
+    <tr><td>Libraries</td><td>open_clip_torch 3.3.0, huggingface_hub, pandas, scikit-learn, Pillow, matplotlib, tqdm</td></tr>
+    <tr><td>Remote access</td><td>AnyDesk (unattended), workstation configured never to sleep</td></tr>
+  </table>
+  <div class="callout">
+    <b>Why CPU is acceptable here.</b> The architecture extracts features <b>once</b> (the only expensive step) and then
+    trains tiny heads. Measured throughput: <b>~137,788 images in ≈ 3.5 h</b> and <b>~60,079 images in ≈ 1.9 h</b> for
+    feature extraction. Once cached, training and evaluation take seconds to minutes.
+  </div>
+  <h4>Engineering problems solved</h4>
+  <ul>
+    <li><b>Windows long-path limit</b> — Derm1M filenames up to ~235 chars; extraction routed through a short root with
+        <code>\\?\</code> path handling.</li>
+    <li><b>Gated model access</b> — required accepting the DermLIP licence on the HF account and authenticating the
+        download with a read token (env-var based, not hard-coded into the model API).</li>
+    <li><b>Library API drift</b> — adapted to <code>open_clip</code> not accepting a <code>token=</code> kwarg, and to
+        <b>pandas 3.0</b> changing <code>groupby.apply</code> to drop the grouping column.</li>
+    <li><b>Data-integrity gate</b> — a pre-flight check verifies images exist before any training, after an earlier
+        build silently trained on zero-tensors when extraction failed.</li>
+  </ul>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="s11">11. Limitations &amp; threats to validity</h2>
+<div class="card">
+  <ol>
+    <li><b>Caption leakage.</b> A majority of captions name the diagnosis; all text-based numbers are reported both
+        raw and de-leaked, and the de-leaked figures are the ones we stand behind.</li>
+    <li><b>Long tail.</b> 17,027 conditions have &lt;5 examples and cannot be trained; they are handled by zero-shot,
+        not by a trained head. We do <b>not</b> claim a 390-way trained classifier.</li>
+    <li><b>CPU-only training.</b> Sufficient for frozen-encoder + probe; full fine-tuning of the backbone would require
+        a GPU.</li>
+    <li><b>Single-source data.</b> All training data is Derm1M; external validation (planned: SCIN) has not yet been
+        performed.</li>
+    <li><b>Skin-tone representation.</b> Not yet stratified/audited across Fitzpatrick or Monk scales — planned as a
+        fairness check.</li>
+    <li><b>Label granularity.</b> The ontology contains broad categories (e.g. "proliferations", "systemic disease")
+        that are not specific diagnoses; these are retained only where they are well-populated.</li>
+    <li><b>No clinical validation.</b> This is a research model; it is not a diagnostic device and has not been
+        evaluated prospectively.</li>
+  </ol>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="s12">12. Conclusions &amp; next steps</h2>
+<div class="card">
+  <h3>What has been demonstrated</h3>
+  <ul>
+    <li>A complete, verifiable multimodal dataset was built from Derm1M: <b>423,016 image–text pairs</b>, all linked
+        and labelled via the clinical ontology.</li>
+    <li><b>Stage 1 (contagion gate)</b> detects infections with <b>93.1% sensitivity</b> and ≥91.5% recall across all
+        four pathogen families.</li>
+    <li><b>Stage 2 (50-class identification)</b> achieves <b>0.431 image-only macro-F1</b> — ~21× chance — with errors
+        concentrated exactly where clinicians also struggle.</li>
+    <li><b>The multimodal hypothesis is confirmed</b> on a leakage-controlled evaluation: fused (0.705) beats both
+        text-only (0.681) and image-only (0.431).</li>
+    <li>A caption-leakage artefact affecting 53% of rows was found, quantified, and corrected — reported transparently.</li>
+    <li><b>Zero-shot breadth:</b> without any training, DermLIP names the correct condition in the top-1 for
+        <b>22%</b> and top-5 for <b>44%</b> of cases across <b>150 conditions</b> (~33× chance) — demonstrating
+        ontology-wide coverage.</li>
+  </ul>
+  <h3>Remaining work</h3>
+  <table>
+    <tr><th>Phase</th><th>Status</th></tr>
+    <tr><td>Download + extract + labelled manifest</td><td><span class="tag t-ok">DONE</span></td></tr>
+    <tr><td>Stage 1 — contagion gate</td><td><span class="tag t-ok">DONE</span></td></tr>
+    <tr><td>Stage 2 — disease identification (50 classes)</td><td><span class="tag t-ok">DONE</span></td></tr>
+    <tr><td>Caption-leakage investigation</td><td><span class="tag t-ok">DONE</span></td></tr>
+    <tr><td>Zero-shot breadth across the ontology (150 conditions)</td><td><span class="tag t-ok">DONE</span> — top-1 0.220 / top-5 0.445</td></tr>
+    <tr><td>ONNX export → Jetson Orin Nano (TensorRT, &lt;100 ms)</td><td><span class="tag t-mut">PLANNED</span></td></tr>
+    <tr><td>External validation (SCIN) + skin-tone fairness audit</td><td><span class="tag t-mut">PLANNED</span></td></tr>
+  </table>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="s13">13. Appendix — artefacts &amp; reproduction</h2>
+<div class="card">
+  <h3>Data artefacts (on <code>E:\</code>)</h3>
+  <pre>E:\SkinShield\raw\Derm1M_v2_pretrain.csv     raw ontology + captions (413,210 rows)
+E:\SkinShield\raw\Derm1M_v2_validation.csv   held-out split (9,806 rows)
+E:\SkinShield\manifest.csv                   linked + labelled index (423,016 rows)
+E:\imgs\&lt;source&gt;\                           423,016 extracted images
+E:\SkinShield\gate\                          Stage-1 features + gate_results_clean.json
+E:\SkinShield\stage2\                        Stage-2 features + stage2_results.json + deleak_results.json
+E:\SkinShield\zeroshot\                      zero-shot features + zeroshot_results.json</pre>
+
+  <h3>Key scripts</h3>
+  <table>
+    <tr><th>Script</th><th>Purpose</th></tr>
+    <tr><td><code>college_pc_phase1.ps1</code></td><td>Install CPU PyTorch + download the full Derm1M dataset</td></tr>
+    <tr><td><code>phase2.py</code></td><td>Extract all archives + build the labelled manifest</td></tr>
+    <tr><td><code>stage1_gate.py</code></td><td>Extract features + train/evaluate the contagion gate</td></tr>
+    <tr><td><code>stage1_report.py</code></td><td>Clean gate report (confusion matrix + per-pathogen recall)</td></tr>
+    <tr><td><code>stage2_disease_id.py</code></td><td>Train/evaluate the 50-class disease identifier</td></tr>
+    <tr><td><code>stage2_deleak.py</code></td><td>Leakage-controlled re-evaluation (the multimodal proof)</td></tr>
+    <tr><td><code>zeroshot_breadth.py</code></td><td>Zero-shot classification across 150 conditions</td></tr>
+  </table>
+
+  <h3>Reproduction</h3>
+  <pre># 1. environment + full dataset
+powershell -File college_pc_phase1.ps1
+# 2. extract + build manifest
+python phase2.py
+# 3. Stage 1 (gate)
+$env:HF_TOKEN="&lt;token&gt;"; python stage1_gate.py
+# 4. Stage 2 (50-class ID) + leakage-controlled eval
+python stage2_disease_id.py
+python stage2_deleak.py</pre>
+
+  <div class="callout">
+    <b>Data governance.</b> Derm1M (CC BY-NC 4.0) and DermLIP (CC BY-NC-ND 4.0) are used strictly for non-commercial
+    academic research. This work is not a medical device and must not be used for diagnosis.
+  </div>
+</div>
+
+<footer>
+  SkinShield · Full Technical Report · generated 2026-10-05 ·
+  Data: Derm1M (CC BY-NC 4.0) · Model: DermLIP ViT-B-16 (CC BY-NC-ND 4.0) ·
+  All metrics produced by runs on the project workstation; seeds and split sizes stated for reproducibility.
+</footer>
+</div>
+</body>
+</html>

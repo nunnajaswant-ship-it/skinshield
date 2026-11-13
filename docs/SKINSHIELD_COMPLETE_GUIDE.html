@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SkinShield — Complete Guide (From Zero)</title>
+<style>
+  :root{
+    --ink:#16202f; --muted:#5a6478; --line:#e2e7ef; --bg:#f5f7fb;
+    --accent:#0f766e; --accent2:#7c3aed; --warn:#b45309; --danger:#b91c1c; --ok:#15803d;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+       color:var(--ink);background:var(--bg);line-height:1.68;font-size:15.5px}
+  header{background:linear-gradient(135deg,#0b1220,#134e4a 65%,#155e57);color:#fff;padding:46px 24px 38px}
+  header .wrap{max-width:960px;margin:0 auto}
+  header h1{margin:0 0 8px;font-size:31px;letter-spacing:.2px}
+  header .sub{color:#cbd5e1;font-size:15.5px;margin:3px 0}
+  .badges{margin-top:15px}
+  .badge{display:inline-block;background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.22);
+         border-radius:999px;padding:3px 12px;font-size:12px;margin:4px 6px 0 0;color:#e2e8f0}
+  .wrap{max-width:960px;margin:0 auto;padding:32px 24px 90px}
+  h2{font-size:23px;margin:48px 0 12px;padding-bottom:10px;border-bottom:2px solid var(--line)}
+  h3{font-size:18px;margin:30px 0 8px}
+  h4{font-size:15.5px;margin:20px 0 6px;color:#334155}
+  p{margin:10px 0}
+  .lead{font-size:17px;color:#334155}
+  .card{background:#fff;border:1px solid var(--line);border-radius:11px;padding:18px 21px;margin:15px 0;
+        box-shadow:0 1px 2px rgba(15,23,42,.04)}
+  table{width:100%;border-collapse:collapse;background:#fff;font-size:13.5px;margin:13px 0}
+  th,td{border:1px solid var(--line);padding:8px 11px;text-align:left;vertical-align:top}
+  th{background:#eef2f8;font-weight:600}
+  tr:nth-child(even) td{background:#fafbfe}
+  .num{text-align:right;font-variant-numeric:tabular-nums}
+  code,pre{font-family:"Cascadia Code",Consolas,monospace}
+  code{background:#eef1f6;border-radius:4px;padding:1px 6px;font-size:13px}
+  pre{background:#0b1220;color:#dbe4f0;border-radius:8px;padding:14px 16px;overflow-x:auto;font-size:12.8px;line-height:1.55}
+  .callout{border-left:4px solid var(--accent);background:#f0fdfa;padding:13px 17px;border-radius:0 8px 8px 0;margin:15px 0}
+  .callout.warn{border-left-color:var(--warn);background:#fffbeb}
+  .callout.danger{border-left-color:var(--danger);background:#fef2f2}
+  .callout.ok{border-left-color:var(--ok);background:#f0fdf4}
+  .callout.plain{border-left-color:var(--accent2);background:#f5f3ff}
+  .tag{display:inline-block;border-radius:999px;padding:1px 9px;font-size:11.5px;font-weight:600}
+  .t-ok{background:#dcfce7;color:var(--ok)} .t-warn{background:#fef3c7;color:var(--warn)}
+  .t-danger{background:#fee2e2;color:var(--danger)} .t-info{background:#e0e7ff;color:#3730a3}
+  .t-mut{background:#f1f5f9;color:var(--muted)}
+  ul,ol{margin:9px 0;padding-left:23px} li{margin:6px 0}
+  .kpi{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:15px 0}
+  .kpi .k{background:#fff;border:1px solid var(--line);border-radius:10px;padding:15px}
+  .kpi .k .v{font-size:24px;font-weight:700;color:var(--accent)}
+  .kpi .k .l{font-size:12.5px;color:var(--muted)}
+  .muted{color:var(--muted);font-size:13px}
+  .toc{background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px 22px}
+  .toc a{color:var(--accent);text-decoration:none} .toc a:hover{text-decoration:underline}
+  .toc ol{margin:6px 0}
+  footer{margin-top:56px;color:var(--muted);font-size:12.5px;border-top:1px solid var(--line);padding-top:16px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:15px}
+  @media(max-width:760px){.grid2{grid-template-columns:1fr}}
+  .win{color:var(--ok);font-weight:600}
+  .stepnum{display:inline-block;background:var(--accent);color:#fff;width:26px;height:26px;border-radius:50%;
+           text-align:center;line-height:26px;font-weight:700;font-size:14px;margin-right:8px}
+  details{background:#fff;border:1px solid var(--line);border-radius:9px;padding:10px 16px;margin:10px 0}
+  summary{cursor:pointer;font-weight:600;color:var(--accent)}
+  blockquote{margin:12px 0;padding:10px 18px;border-left:4px solid #cbd5e1;color:#475569;background:#fff}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <h1>SkinShield — The Complete Guide</h1>
+    <p class="sub">How we built an AI that reads a skin photograph and a description, and names the disease</p>
+    <p class="sub">Written so that <b>anyone</b> — even with zero background in AI — can follow every step</p>
+    <div class="badges">
+      <span class="badge">Dataset: Derm1M · 423,016 image–text pairs</span>
+      <span class="badge">Model: DermLIP ViT-B-16</span>
+      <span class="badge">388 skin conditions</span>
+      <span class="badge">Final accuracy: macro-F1 0.8338</span>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+<p class="lead">
+This document explains, from the very beginning, everything we did to build <b>SkinShield</b> — a computer
+system that looks at a picture of skin and a short written description, and tells you which skin disease it
+most likely is (and whether it might be contagious). We start with plain-language explanations of every concept,
+then walk through the data, the preparation, the model, the first results, and the improvements that more than
+<b>doubled our accuracy</b>. Nothing is assumed — every term is explained.
+</p>
+
+<div class="toc">
+  <b>Contents</b>
+  <ol>
+    <li><a href="#p1">The idea, in plain English</a></li>
+    <li><a href="#p2">Background concepts (start here if new to AI)</a></li>
+    <li><a href="#p3">The problem we chose to solve</a></li>
+    <li><a href="#p4">The dataset — Derm1M</a></li>
+    <li><a href="#p5">Dataset curation — turning files into a dataset</a></li>
+    <li><a href="#p6">Preprocessing — turning images and words into numbers</a></li>
+    <li><a href="#p7">Splitting the data (train / validation / test)</a></li>
+    <li><a href="#p8">The model — DermLIP, explained</a></li>
+    <li><a href="#p9">Stage 1 — the contagion gate (results)</a></li>
+    <li><a href="#p10">Stage 2 — naming the disease (first results)</a></li>
+    <li><a href="#p11">A problem we found: the captions give away the answer</a></li>
+    <li><a href="#p12">How we increased accuracy — the full journey</a></li>
+    <li><a href="#p13">Final results — the complete picture</a></li>
+    <li><a href="#p14">Bonus: zero-shot classification</a></li>
+    <li><a href="#p15">What is still to come</a></li>
+    <li><a href="#p16">Glossary</a></li>
+  </ol>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="p1">1. The idea, in plain English</h2>
+<div class="card">
+  <p>Imagine you notice an unusual patch on your skin. You take a photo with your phone and type a short
+  description: <i>"red itchy patch on my forearm, started three days ago."</i> You upload both.</p>
+  <p>SkinShield answers with two things, <b>always in this order</b>:</p>
+  <ol>
+    <li><b>Is it possibly contagious?</b> If yes → <i>"This could be infectious — please see a doctor and avoid
+    close contact."</i></li>
+    <li><b>If it is not contagious, what is it?</b> → names the most likely condition out of hundreds.</li>
+  </ol>
+  <div class="callout plain">
+    <b>Why this order matters.</b> In medicine, the worst mistake a computer can make is to wrongly say
+    "you're fine." So we made the system answer the <b>safety-critical question first</b> (is it contagious?),
+    and only then attempt the harder, finer question (what exactly is it?).
+  </div>
+  <p>That is the whole product. Everything below is how we built it, and how well it performs.</p>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="p2">2. Background concepts (start here if new to AI)</h2>
+<div class="card">
+  <p>Skip this section if you already know machine learning. If not, read it — the rest of the document will
+  make far more sense.</p>
+
+  <h3>2.1 What is "machine learning"?</h3>
+  <p>Normally, we program computers by writing exact rules: <i>"if the temperature is above 100, turn on the
+  fan."</i> But nobody can write exact rules for "is this a melanoma?" — even dermatologists rely on
+  experience. <b>Machine learning</b> flips the approach: instead of writing rules, we show the computer
+  <b>thousands of examples with the correct answers</b>, and it figures out the patterns itself.</p>
+
+  <h3>2.2 What is a "neural network"?</h3>
+  <p>A neural network is a large mathematical function with millions of adjustable numbers (called
+  <b>parameters</b> or <b>weights</b>). You feed it an input (e.g. an image), it produces an output (e.g. a
+  disease name). During <b>training</b>, the computer nudges all those numbers slightly so that the answers
+  get closer and closer to correct. Think of it as tuning millions of dials until the machine behaves.</p>
+
+  <h3>2.3 What is an "embedding" or "feature vector"?</h3>
+  <p>Computers cannot compare pictures directly. So a model converts an image into a <b>list of numbers</b> —
+  for example, 512 numbers — that summarise its visual content. This list is called an <b>embedding</b> or
+  <b>feature vector</b>. Two similar images produce similar lists. Everything downstream works with these
+  lists, not the raw pixels.</p>
+  <pre>image of skin  →  [0.21, -0.44, 0.07, ... , 0.88]   ← 512 numbers
+text "red rash" →  [0.19, -0.40, 0.11, ... , 0.91]   ← 512 numbers</pre>
+
+  <h3>2.4 What is a "vision–language model"? (and CLIP / DermLIP)</h3>
+  <p>A <b>vision–language model</b> is trained on <b>pairs</b> of (image, description). It learns to place an
+  image and its matching description at nearly the same point in that "number space," and mismatched pairs
+  far apart. The famous general-purpose version is called <b>CLIP</b>. <b>DermLIP</b> is the same idea but
+  trained only on <b>skin</b> images and dermatology text — so it understands skin disease specifically.</p>
+
+  <h3>2.5 What does "frozen encoder + head" mean?</h3>
+  <p>Training a huge model like DermLIP from scratch is extremely expensive. Instead we <b>reuse</b> it exactly
+  as it is (we "freeze" it — we don't change its numbers) and use it purely as a <b>feature extractor</b>: it
+  turns every image and every text into a list of 512 numbers. Then we train a <b>small, simple classifier</b>
+  (called a "head") on top of those numbers. This is fast, cheap, and effective — like using a very good
+  translator and then just learning to sort its output.</p>
+
+  <h3>2.6 What is an "ablation study"?</h3>
+  <p>An ablation means: remove one ingredient at a time and see how much performance drops. If we want to prove
+  that <b>combining image + text</b> helps, we train three separate systems — image only, text only, and
+  both — and compare. If "both" wins, the combination is doing real work. <b>This comparison is the scientific
+  heart of the project.</b></p>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="p3">3. The problem we chose to solve</h2>
+<div class="card">
+  <p>We built a <b>two-stage classifier</b> that takes an <b>image + a piece of clinical text</b>:</p>
+  <pre>image + text
+     │
+     ▼
+┌───────────────────────────────┐
+│ STAGE 1 — CONTAGION GATE      │   "Is this infectious / could it spread?"
+└───────────────┬───────────────┘
+        ┌───────┴────────┐
+   INFECTIOUS       NON-INFECTIOUS
+        │                 │
+        ▼                 ▼
+  "see a doctor"    ┌──────────────────────────┐
+  (13% of cases)    │ STAGE 2 — NAME THE DISEASE│
+                    │ 50-class classifier       │
+                    └──────────────────────────┘</pre>
+
+  <div class="callout warn">
+    <b>An important early decision — the "pivot".</b> The project originally planned to use <b>body sensors</b>
+    (heart rate, temperature, etc.). But <b>no public sensor dataset exists for skin disease</b>, so we changed
+    to <b>image + text</b>. A consequence: any dataset that has pictures but <b>no matching text</b>
+    (e.g. HAM10000, ISIC) becomes unusable, because half of our model needs the text. This one decision shaped
+    everything that follows.
+  </div>
+
+  <p><b>Scope:</b> the task began as 12 diseases and grew to cover the <b>entire ontology of 388 conditions</b>.</p>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="p4">4. The dataset — Derm1M</h2>
+<div class="card">
+  <h3>4.1 What it is</h3>
+  <p><b>Derm1M</b> is the largest public collection of <b>skin images paired with clinical text</b>. Each entry
+  is one skin photograph plus a description written by clinicians or patients. Crucially, every entry also
+  carries a structured label telling us <b>what disease it is</b>.</p>
+
+  <div class="kpi">
+    <div class="k"><div class="v">423,016</div><div class="l">image–text pairs in total</div></div>
+    <div class="k"><div class="v">413,210</div><div class="l">in the "pretrain" portion</div></div>
+    <div class="k"><div class="v">9,806</div><div class="l">in the "validation" portion</div></div>
+    <div class="k"><div class="v">34.5 GB</div><div class="l">size when downloaded</div></div>
+    <div class="k"><div class="v">388</div><div class="l">conditions in its ontology</div></div>
+  </div>
+
+  <h3>4.2 Where the images come from</h3>
+  <p>The data is stored as 9 compressed archives (".zip" files). We downloaded and opened all of them:</p>
+  <table>
+    <tr><th>Archive</th><th class="num">Size</th><th>Where the pictures came from</th></tr>
+    <tr><td>youtube.zip</td><td class="num">15.8 GB</td><td>frames from dermatology education videos</td></tr>
+    <tr><td>edu.zip</td><td class="num">5.6 GB</td><td>medical textbooks and reference figures</td></tr>
+    <tr><td>public.zip</td><td class="num">3.8 GB</td><td>public skin-image collections</td></tr>
+    <tr><td>note.zip</td><td class="num">2.3 GB</td><td>clinical notes and atlases</td></tr>
+    <tr><td>IIYI.zip</td><td class="num">1.7 GB</td><td>a Chinese clinical platform</td></tr>
+    <tr><td>pubmed.zip</td><td class="num">1.6 GB</td><td>medical-literature figures</td></tr>
+    <tr><td>validation_data.zip</td><td class="num">1.1 GB</td><td>the held-out validation images</td></tr>
+    <tr><td>twitter.zip</td><td class="num">0.6 GB</td><td>public social-media clinical images</td></tr>
+    <tr><td>reddit.zip</td><td class="num">70 MB</td><td>forum (r/Dermatology) images</td></tr>
+  </table>
+
+  <h3>4.3 The "ontology" — a family tree of diseases</h3>
+  <p>Derm1M does not just label each image with one word. It places every case on a <b>family tree</b> of
+  diseases. For example:</p>
+  <pre>inflammatory → non-infectious → eczema → contact dermatitis → allergic contact dermatitis
+inflammatory → infectious     → viral  → molluscum contagiosum
+proliferations → malignant     → melanocytic → melanoma</pre>
+  <p>This tree is extremely valuable, because it tells us two things <b>for free</b>:</p>
+  <ul>
+    <li>whether a condition is <b>infectious</b> (could it spread?) — the branch after "inflammatory"</li>
+    <li>whether it is <b>cancerous</b> ("malignant") or harmless ("benign")</li>
+  </ul>
+
+  <h3>4.4 How many conditions are contagious?</h3>
+  <p>The ontology contains <b>388 conditions</b>. We split them by whether they are infectious:</p>
+  <table>
+    <tr><th>Group</th><th class="num">Count</th><th>Meaning</th></tr>
+    <tr><td>Infectious (potentially contagious)</td><td class="num">49</td><td>warts, impetigo, cellulitis, syphilis, scabies…</td></tr>
+    <tr><td>Explicitly non-infectious</td><td class="num">85</td><td>lupus, vasculitis, acne, morphea…</td></tr>
+    <tr><td>Neither (cancers, genetic, hair, nail…)</td><td class="num">254</td><td>melanoma, BCC, SCC, nevi, alopecia…</td></tr>
+  </table>
+  <div class="callout ok">
+    <b>339 of the 388 conditions (≈87%) are non-contagious.</b> Only <b>49 (≈13%)</b> are infectious.
+    This is exactly why the two-stage design is justified: Stage 1 isolates the dangerous 13%; Stage 2
+    works on the safe 87%.
+  </div>
+  <p class="muted">One honest note: the tree says "infectious," which is slightly broader than "contagious."
+  A few of the 49 can be caught internally without spreading to others. Using "infectious" is the <b>safe</b>
+  choice — it never under-warns.</p>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="p5">5. Dataset curation — turning files into a usable dataset</h2>
+<div class="card">
+  <p>The downloaded files are useless as-is. The label file (a spreadsheet, ".csv") lists image filenames
+  like <code>youtube/abc.jpg</code>, while the archives contain the files under their plain name
+  <code>abc.jpg</code>. <b>We had to link them together.</b></p>
+
+  <h4>Our pipeline (5 steps)</h4>
+  <p><span class="stepnum">1</span><b>Download</b> — pulled all 34.5 GB from HuggingFace.</p>
+  <p><span class="stepnum">2</span><b>Extract</b> — unzipped all 9 archives. Some filenames were ~235
+  characters long, dangerously close to Windows' 260-character limit, so we built in protection for that.</p>
+  <p><span class="stepnum">3</span><b>Link</b> — for every row in the spreadsheet, we looked up the matching
+  image on disk and confirmed it exists.</p>
+  <p><span class="stepnum">4</span><b>Label</b> — we read the family tree for each row and recorded: the
+  specific condition, whether it is infectious, whether it is malignant, and its top-level category.</p>
+  <p><span class="stepnum">5</span><b>Verify</b> — we checked that the number of images matched the number of
+  rows. Result:</p>
+  <pre>[manifest] rows: 423016 | images found: 423016      ← 100% match, none missing
+[manifest] infectious rows: 27964 | malignant rows: 21413</pre>
+
+  <div class="callout ok">
+    <b>Deliverable:</b> one master spreadsheet — <code>manifest.csv</code> — listing all 423,016 cases, each
+    with the path to its image and all its labels. This single file becomes "the dataset" for every later step.
+  </div>
+
+  <div class="callout danger">
+    <b>A trap we caught.</b> The word <b>"non-infectious" contains the word "infectious"</b> inside it! A naive
+    search would label every harmless condition as infectious — corrupting the entire safety gate. We wrote the
+    test correctly: <i>"is it infectious, AND NOT non-infectious."</i> Finding and fixing this was essential.
+  </div>
+
+  <h4>Why can't we train on all 388 conditions?</h4>
+  <p>Because of a "long tail": a handful of conditions have many examples, but most have almost none.</p>
+  <table>
+    <tr><th>Conditions having at least…</th><th class="num">How many such conditions</th></tr>
+    <tr><td>500 examples</td><td class="num">80</td></tr>
+    <tr><td>300 examples</td><td class="num">114</td></tr>
+    <tr><td>100 examples</td><td class="num">213</td></tr>
+    <tr><td>fewer than 5 examples</td><td class="num">17,027</td></tr>
+  </table>
+  <p>You cannot teach a computer to recognise a disease from 2 or 3 photos. So we <b>train</b> only on the
+  well-populated conditions and handle the rare remainder with a different technique (zero-shot — see §14).</p>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="p6">6. Preprocessing — turning images and words into numbers</h2>
+<div class="card">
+  <p>Neural networks only understand numbers. So before anything else, every input is converted:</p>
+  <div class="grid2">
+    <div>
+      <h4>An image becomes numbers</h4>
+      <ol>
+        <li>Resize to a fixed <b>224 × 224</b> pixels (so every image is the same shape).</li>
+        <li>Convert pixels to numbers on a standard scale.</li>
+        <li>Feed through DermLIP's <b>image encoder</b> → a list of <b>512 numbers</b>.</li>
+      </ol>
+    </div>
+    <div>
+      <h4>Text becomes numbers</h4>
+      <ol>
+        <li>Split the sentence into word-pieces (called <b>tokens</b>).</li>
+        <li>Feed through DermLIP's <b>text encoder</b> → a list of <b>512 numbers</b>.</li>
+      </ol>
+    </div>
+  </div>
+  <p>We do this <b>once</b> and save the numbers to disk ("caching"). This is important: it means later
+  experiments take minutes instead of hours, because re-reading 60,000 images through the encoder is the
+  single most expensive step.</p>
+  <div class="callout plain">
+    <b>In plain terms:</b> we translate every photo and every description into two "summaries of 512 numbers,"
+    and from then on we work only with those summaries. It is like converting every book into a single
+    fingerprint — comparisons become trivial, and nothing needs to be read twice.
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="p7">7. Splitting the data (train / validation / test)</h2>
+<div class="card">
+  <p>If you showed a student the exam questions <i>and</i> the answers while studying, then gave the same
+  questions on the exam, they'd score 100% — but you'd have learned nothing about their real ability.
+  Machine learning has the same trap. So we split the data into parts:</p>
+  <table>
+    <tr><th>Part</th><th>Purpose</th><th>Analogy</th></tr>
+    <tr><td><b>Training</b> (80%)</td><td>the model learns from these</td><td>the textbook</td></tr>
+    <tr><td><b>Test</b> (20%)</td><td>used <i>only</i> to measure final performance</td><td>the unseen exam</td></tr>
+  </table>
+  <p>We also use a technique called <b>stratification</b>: we make sure the mix of diseases is the same in both
+  parts, so the test isn't accidentally full of one disease.</p>
+  <p>Our exact splits:</p>
+  <table>
+    <tr><th>Experiment</th><th class="num">Total cases</th><th class="num">Training</th><th class="num">Test</th><th class="num">Classes</th></tr>
+    <tr><td>Stage 1 — contagion gate</td><td class="num">137,788</td><td class="num">110,230</td><td class="num">27,558</td><td class="num">2</td></tr>
+    <tr><td>Stage 2 — disease naming</td><td class="num">69,879</td><td class="num">~55,900</td><td class="num">~13,975</td><td class="num">50</td></tr>
+  </table>
+  <p class="muted">We cap each disease at 2,000 examples when building Stage 2, so no single very common
+  condition dominates the training.</p>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="p8">8. The model — DermLIP, explained</h2>
+<div class="card">
+  <p>We did not build a model from scratch. We adopted <b>DermLIP</b>, a publicly released dermatology
+  vision–language model — and, importantly, one whose <b>weights (trained numbers) are openly available</b>.</p>
+  <table>
+    <tr><th style="width:36%">Property</th><th>Value</th></tr>
+    <tr><td>Name</td><td><b>DermLIP ViT-B-16</b></td></tr>
+    <tr><td>Type</td><td>vision–language model (image + text)</td></tr>
+    <tr><td>Size</td><td>~150 million parameters</td></tr>
+    <tr><td>Output per input</td><td>512 numbers (an "embedding")</td></tr>
+    <tr><td>Trained on</td><td>403,563 dermatology image–text pairs</td></tr>
+    <tr><td>Published</td><td>arXiv 2503.14911 · Nature Medicine (2025)</td></tr>
+    <tr><td>Licence</td><td>free for non-commercial academic research</td></tr>
+  </table>
+
+  <h4>Why this model?</h4>
+  <p>It was trained <b>exclusively on skin data</b>, so it already understands dermatology vocabulary and
+  appearance — far better than a general-purpose model. It is also the natural companion to the Derm1M dataset
+  (the same research group produced both), which makes results comparable and defensible.</p>
+
+  <h4>Our approach: use it frozen, train a small "head"</h4>
+  <p>Because DermLIP is already excellent, we do not modify it. We use it to produce the 512-number summaries,
+  then train a small classifier ("head") on top. As shown in §12, <b>the choice of head turned out to matter
+  enormously</b> — one of our biggest accuracy gains came from simply using a smarter head.</p>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="p9">9. Stage 1 — the contagion gate (results)</h2>
+<div class="card">
+  <p><b>Question it answers:</b> is this infectious or not? (2 classes)<br>
+  <b>Data:</b> 137,788 cases — 27,964 infectious, 109,824 non-infectious. Split 80/20.</p>
+
+  <h3>Results</h3>
+  <table>
+    <tr><th>What it used</th><th class="num">Accuracy</th><th class="num">Balanced accuracy</th></tr>
+    <tr><td>image only</td><td class="num">0.7613</td><td class="num">0.7590</td></tr>
+    <tr><td>text only</td><td class="num">0.9292</td><td class="num">0.9312</td></tr>
+    <tr><td><b>image + text</b></td><td class="num"><b>0.9320</b></td><td class="num"><b>0.9317</b></td></tr>
+  </table>
+  <p><b>"Balanced accuracy"</b> means we count both classes equally — important because most cases are
+  non-infectious, so a lazy model could score high by always saying "not infectious." Balanced accuracy
+  prevents that illusion.</p>
+
+  <h3>The safety number that matters</h3>
+  <pre>                    said NON-infectious   said infectious
+actually NON-inf          20,474             1,491
+actually INFECTIOUS          384             5,209</pre>
+  <div class="kpi">
+    <div class="k"><div class="v">93.1%</div><div class="l">of true infections correctly flagged</div></div>
+    <div class="k"><div class="v">384</div><div class="l">infections missed (of 5,593)</div></div>
+    <div class="k"><div class="v">6.9%</div><div class="l">miss rate — the safety figure</div></div>
+  </div>
+  <p>Even more encouraging: broken down by type of germ, the gate caught <b>bacterial 93.9%</b>,
+  <b>fungal 91.5%</b>, <b>viral 94.6%</b>, and <b>parasitic 91.7%</b> of cases. It is not biased toward one
+  kind of infection.</p>
+  <div class="callout ok">
+    <b>Interpretation.</b> The gate misses fewer than 1 in 14 infections — and every "false alarm" it raises
+    is harmless (the user is merely advised to see a doctor). This is the correct trade-off for a
+    safety-first tool.
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="p10">10. Stage 2 — naming the disease (first results)</h2>
+<div class="card">
+  <p><b>Question it answers:</b> out of <b>50 common non-contagious conditions</b> (including skin cancers),
+  which one is it?<br>
+  <b>Data:</b> 69,879 cases across 50 classes (melanoma, basal cell carcinoma, squamous cell carcinoma,
+  nevus, psoriasis, eczema, lupus, pemphigus, ichthyosis…).</p>
+
+  <h3>First results</h3>
+  <table>
+    <tr><th>What it used</th><th class="num">Accuracy</th><th class="num">Macro-F1</th></tr>
+    <tr><td>image only</td><td class="num">0.4404</td><td class="num">0.4311</td></tr>
+    <tr><td>text only</td><td class="num">0.8734</td><td class="num">0.8736</td></tr>
+    <tr><td>image + text</td><td class="num">0.8503</td><td class="num">0.8553</td></tr>
+  </table>
+  <p><b>"Macro-F1"</b> is a fairness-aware score: it averages performance across all 50 diseases equally, so
+  rare diseases count as much as common ones. Random guessing among 50 would score about 0.02. So
+  image-only at <b>0.43 is roughly 21× better than chance</b>.</p>
+  <p>But something was suspicious: the <b>text-only</b> score (0.87) was almost perfect. That is too good to
+  be true — and it was the clue that led to the next section.</p>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="p11">11. A problem we found: the captions give away the answer</h2>
+<div class="card">
+  <p>We inspected the text descriptions and discovered that many of them <b>literally state the diagnosis</b>:</p>
+  <pre>"This image describes melanoma, a type of skin cancer…"
+"This is a clinical skin image, diagnosed as tinea ringworm…"
+"This image shows Kaposi's sarcoma…"</pre>
+  <p>So the "text-only" model wasn't clever — it was <b>reading the answer off the page</b>. In the real
+  world, a patient types <i>symptoms</i>, never a diagnosis. This is called <b>data leakage</b>, and it makes
+  scores look better than they are.</p>
+
+  <h4>We measured it</h4>
+  <p>We counted how often a description contains its own disease name:</p>
+  <table>
+    <tr><th>Disease</th><th class="num">Descriptions naming the diagnosis</th></tr>
+    <tr><td>melanoma</td><td class="num">92%</td></tr>
+    <tr><td>tinea</td><td class="num">92%</td></tr>
+    <tr><td>basal cell carcinoma</td><td class="num">91%</td></tr>
+    <tr><td>eczema</td><td class="num">90%</td></tr>
+    <tr><td>acne</td><td class="num">83%</td></tr>
+    <tr><td><b>Overall</b></td><td class="num"><b>53%</b></td></tr>
+  </table>
+
+  <h4>The fix — and the surprising result</h4>
+  <p>We <b>erased the diagnosis name from every description</b> and re-ran everything. This gives the honest
+  picture:</p>
+  <table>
+    <tr><th>Configuration</th><th class="num">Accuracy</th><th class="num">Macro-F1</th></tr>
+    <tr><td>image only</td><td class="num">0.4404</td><td class="num">0.4311</td></tr>
+    <tr><td>text (with diagnosis — <i>leaky</i>)</td><td class="num">0.8734</td><td class="num">0.8736</td></tr>
+    <tr><td>text (diagnosis erased — <i>honest</i>)</td><td class="num">0.6879</td><td class="num">0.6814</td></tr>
+    <tr><td>image + text (leaky)</td><td class="num">0.8503</td><td class="num">0.8553</td></tr>
+    <tr><td><b>image + text (honest)</b></td><td class="num"><b>0.7095</b></td><td class="num"><b>0.7045</b></td></tr>
+  </table>
+  <div class="callout ok">
+    <b>Two crucial findings.</b>
+    <ol>
+      <li>The leak was worth about <b>0.19 macro-F1</b> — we now report the honest number.</li>
+      <li><b>The core hypothesis is proven:</b> with the leak removed, combining image + text (0.7045)
+          beats text alone (0.6814) <i>and</i> image alone (0.4311). This is the exact claim the project set
+          out to demonstrate — and it only became believable <i>after</i> we removed the leak.</li>
+    </ol>
+    Reporting this openly demonstrates rigour: we found a flaw that inflated our numbers, and we corrected it.
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="p12">12. How we increased accuracy — the full journey</h2>
+<div class="card">
+  <p>Starting from <b>0.7045</b>, we applied four improvements, one after another, all measured on the
+  <b>same</b> test data so the comparison is fair.</p>
+
+  <h3><span class="stepnum">1</span>Use a third input source — clinical metadata</h3>
+  <p>Every case also carries structured facts we had not used: <b>age</b>, <b>sex</b>,
+  <b>body location</b> (face, foot, nail…), and <b>skin appearance concepts</b> (red, patch, nodule, blister…).
+  We added these ~100 extra numbers on top of the image and text. This creates a <b>"tri-modal"</b> model —
+  three sources instead of two.</p>
+  <table>
+    <tr><th>Configuration</th><th class="num">Macro-F1</th></tr>
+    <tr><td>metadata only</td><td class="num">0.2800</td></tr>
+    <tr><td>image + text (previous best)</td><td class="num">0.7045</td></tr>
+    <tr><td><b>+ metadata (tri-modal)</b></td><td class="num"><b>0.7461</b></td></tr>
+  </table>
+  <p>→ Adding metadata gave <b>+4.2 points</b>. Metadata alone is weak, but it adds real information when
+  combined — the hallmark of a useful new input.</p>
+
+  <h3><span class="stepnum">2</span>Use a smarter classifier "head"</h3>
+  <p>Our first head was simple logistic regression. We replaced it with two stronger methods: a
+  <b>multi-layer perceptron</b> (a small neural network) and <b>gradient-boosted trees</b> (HistGBM).</p>
+  <table>
+    <tr><th>Head</th><th class="num">Macro-F1</th></tr>
+    <tr><td>logistic regression</td><td class="num">0.7461</td></tr>
+    <tr><td>+ MLP (small neural network)</td><td class="num">0.8083</td></tr>
+    <tr><td>+ HistGBM (boosted trees)</td><td class="num"><b>0.8102</b></td></tr>
+  </table>
+  <p>→ A smarter head alone gave <b>+6.4 points — for free</b>. The lesson: with a strong frozen model, the
+  head you put on top matters a great deal.</p>
+
+  <h3><span class="stepnum">3</span>Teach the model the disease family tree (our key novelty)</h3>
+  <p>Instead of training the model only to name the disease, we trained a neural network with <b>two jobs at
+  once</b>: predict the <b>broad category</b> (e.g. "inflammatory") <i>and</i> the <b>exact disease</b>. Knowing
+  the category helps the model choose the disease, just as knowing "this is a fruit" helps you decide
+  "apple vs orange." This is <b>ontology-guided hierarchical multi-task learning</b> — our main novel
+  contribution.</p>
+  <table>
+    <tr><th>Configuration</th><th class="num">Disease macro-F1</th><th class="num">Category accuracy</th></tr>
+    <tr><td><b>Hierarchical multi-task network</b></td><td class="num"><b>0.8337</b></td><td class="num">0.8959</td></tr>
+  </table>
+  <p>→ <b>+8.8 points over the previous best.</b> The model also predicts the broad category correctly
+  89.6% of the time — strong evidence it has learned genuine dermatology structure.</p>
+
+  <h3><span class="stepnum">4</span>Combine several models (ensembling)</h3>
+  <p>Different classifiers make different mistakes. So we averaged the decisions of logistic regression, the
+  MLP, and HistGBM — a technique called <b>soft-voting</b> — as a robustness check.</p>
+  <table>
+    <tr><th>Model</th><th class="num">Macro-F1</th></tr>
+    <tr><td>k-NN (retrieval-based, k=15)</td><td class="num">0.7415</td></tr>
+    <tr><td><b>Ensemble (LR + MLP + HistGBM)</b></td><td class="num"><b>0.8338</b></td></tr>
+  </table>
+  <p>→ The ensemble (0.8338) confirmed the hierarchical result (0.8337) — two independent methods reaching
+  the same number is a strong, trustworthy outcome.</p>
+
+  <div class="callout warn">
+    <b>A method that did <i>not</i> help (reported honestly).</b> We also tried "test-time augmentation" —
+    feeding each image normally and flipped, then averaging. It gave no improvement (0.7461). Negative results
+    are part of honest research, so we report it rather than hide it.
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="p13">13. Final results — the complete picture</h2>
+<div class="card">
+  <h3>The accuracy journey in one table</h3>
+  <table>
+    <tr><th>Step</th><th class="num">Macro-F1</th><th class="num">Change</th></tr>
+    <tr><td>image only (starting point)</td><td class="num">0.4311</td><td class="num">—</td></tr>
+    <tr><td>text (honest, leak removed)</td><td class="num">0.6814</td><td class="num">+0.25</td></tr>
+    <tr><td>image + text (honest)</td><td class="num">0.7045</td><td class="num">+0.27</td></tr>
+    <tr><td>+ clinical metadata (tri-modal)</td><td class="num">0.7461</td><td class="num">+0.32</td></tr>
+    <tr><td>+ smarter head (HistGBM)</td><td class="num">0.8102</td><td class="num">+0.38</td></tr>
+    <tr><td>+ family-tree guidance (hierarchical)</td><td class="num">0.8337</td><td class="num">+0.40</td></tr>
+    <tr><td><b>+ ensemble (final)</b></td><td class="num"><b>0.8338</b></td><td class="num"><b>+0.40</b></td></tr>
+  </table>
+  <div class="kpi">
+    <div class="k"><div class="v">0.8338</div><div class="l">final macro-F1 (50 diseases)</div></div>
+    <div class="k"><div class="v">~93%</div><div class="l">relative improvement over the baseline</div></div>
+    <div class="k"><div class="v">93.1%</div><div class="l">infection detection (Stage 1)</div></div>
+  </div>
+  <p>In plain terms: we roughly <b>doubled</b> the system's ability to name the right disease, while keeping
+  the safety gate at over 93% infection detection.</p>
+
+  <h3>Where the model is strong and weak (and why that's a good sign)</h3>
+  <div class="grid2">
+    <div>
+      <h4>Easiest diseases (F1 ≈ 0.97–0.99)</h4>
+      <p>Kaposi sarcoma, seborrheic keratoses, skin tags, neurofibromatosis — all with very distinctive
+      appearances.</p>
+    </div>
+    <div>
+      <h4>Hardest diseases (F1 ≈ 0.63–0.76)</h4>
+      <p>Dermatitis, eczema, psoriasis, cutaneous T-cell lymphoma, lupus — conditions that <b>look like each
+      other</b>.</p>
+    </div>
+  </div>
+  <div class="callout ok">
+    <b>Why this pattern matters.</b> The model finds visually obvious diseases easy and the overlapping
+    inflammatory conditions hard — <b>exactly the same difficulty pattern human dermatologists face.</b> This
+    is strong evidence the model learned real medical structure, not a statistical shortcut.
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="p14">14. Bonus: zero-shot classification</h2>
+<div class="card">
+  <p>We also tested DermLIP's <b>zero-shot</b> ability: name the disease with <b>no training at all</b>, purely
+  by comparing the image to text prompts like <i>"This is a skin image of melanoma."</i> We tested it across
+  <b>150 conditions</b>.</p>
+  <table>
+    <tr><th>Metric</th><th class="num">Value</th><th>Meaning</th></tr>
+    <tr><td>top-1 accuracy</td><td class="num">0.2198</td><td>correct disease ranked #1 for 22% of cases</td></tr>
+    <tr><td>top-5 accuracy</td><td class="num">0.4447</td><td>correct disease in the top 5 for 44%</td></tr>
+    <tr><td>random chance</td><td class="num">0.0067</td><td>1 in 150 — so we are <b>~33× better than chance</b></td></tr>
+  </table>
+  <p>It works best on distinctive conditions (pityriasis rosea 0.78, cheilitis 0.68) and struggles with vague,
+  overlapping ones (dermatitis, keratosis — 0.00), which makes sense: "a skin image of dermatitis" is an
+  inherently ambiguous prompt.</p>
+  <p><b>Why it's useful:</b> zero-shot provides <b>breadth</b> (any condition, instantly), while the trained
+  Stage 2 gives <b>depth</b> on well-represented conditions. Together they cover the whole ontology.</p>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="p15">15. What is still to come</h2>
+<div class="card">
+  <table>
+    <tr><th>Step</th><th>Status</th></tr>
+    <tr><td>Dataset download, extraction, labelling</td><td><span class="tag t-ok">DONE</span></td></tr>
+    <tr><td>Stage 1 — contagion gate</td><td><span class="tag t-ok">DONE</span> (93.1% sensitivity)</td></tr>
+    <tr><td>Stage 2 — disease naming</td><td><span class="tag t-ok">DONE</span> (macro-F1 0.8338)</td></tr>
+    <tr><td>Leakage investigation</td><td><span class="tag t-ok">DONE</span></td></tr>
+    <tr><td>Zero-shot breadth</td><td><span class="tag t-ok">DONE</span></td></tr>
+    <tr><td>On-device deployment (Jetson edge computer)</td><td><span class="tag t-mut">PLANNED</span></td></tr>
+    <tr><td>Fine-tuning the model further (needs a GPU)</td><td><span class="tag t-mut">PLANNED</span></td></tr>
+    <tr><td>Validation on a second, independent dataset</td><td><span class="tag t-mut">PLANNED</span></td></tr>
+  </table>
+  <p class="muted">Currently all computation runs on the <b>CPU</b> of a standard workstation (no GPU). This
+  is sufficient for our frozen-model approach, but further fine-tuning would benefit from a GPU.</p>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="p16">16. Glossary</h2>
+<div class="card">
+  <details open><summary>Embedding / feature vector</summary><p>A list of numbers (here, 512) that summarises
+  an image or a piece of text so a computer can compare them mathematically.</p></details>
+  <details><summary>Encoder</summary><p>The part of a model that converts an input into an embedding.</p></details>
+  <details><summary>Frozen</summary><p>Deliberately not changing a pre-trained model's internal numbers, using
+  it purely as a feature extractor.</p></details>
+  <details><summary>Head</summary><p>A small classifier trained on top of a frozen model's embeddings to make
+  the final decision.</p></details>
+  <details><summary>Multimodal</summary><p>Using more than one kind of input (here: image, text, and structured
+  metadata).</p></details>
+  <details><summary>Tri-modal</summary><p>Our three-input version: image + text + clinical metadata.</p></details>
+  <details><summary>Epoch</summary><p>One full pass of the model over the training data during learning.</p></details>
+  <details><summary>Macro-F1</summary><p>A performance score that treats every disease equally, so rare diseases
+  count as much as common ones.</p></details>
+  <details><summary>Balanced accuracy</summary><p>Accuracy that weights the classes equally, guarding against a
+  model that scores well by always guessing the most common answer.</p></details>
+  <details><summary>Leakage</summary><p>When the input secretly contains the answer, making performance look
+  better than it truly is.</p></details>
+  <details><summary>Ablation</summary><p>Removing one component at a time to measure how much each contributes.</p></details>
+  <details><summary>Zero-shot</summary><p>Classifying correctly without any training, using only a
+  text description of each class.</p></details>
+  <details><summary>Ensemble</summary><p>Combining several models' outputs to get a more reliable result than
+  any single model.</p></details>
+  <details><summary>Hierarchical (ontology-guided)</summary><p>Teaching the model the "family tree" of diseases
+  so it predicts both the broad category and the specific disease.</p></details>
+  <details><summary>Train / validation / test split</summary><p>Dividing data into a part to learn from and a
+  part to fairly measure performance on unseen cases.</p></details>
+</div>
+
+<footer>
+  SkinShield · Complete Beginner-to-Expert Guide · generated 2026-10-13 ·
+  Data: Derm1M (CC BY-NC 4.0, non-commercial) · Model: DermLIP ViT-B-16 (CC BY-NC-ND 4.0) ·
+  All figures come from real runs on the project workstation. This is a research prototype and not a medical device.
+</footer>
+</div>
+</body>
+</html>

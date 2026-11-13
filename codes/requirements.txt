@@ -1,0 +1,15 @@
+# Core pipeline dependencies
+torch>=2.0
+torchvision
+open_clip_torch>=3.0.0
+huggingface_hub>=0.23
+pandas
+numpy
+pillow
+scikit-learn
+matplotlib
+tqdm
+
+# Edge export
+onnx
+onnxscript

@@ -1,0 +1,32 @@
+# SkinShield Research License
+
+Copyright (c) 2026 Nunna Jaswanth Sriram, Harini Shree R, Dr. K. Deepa
+Amrita School of Engineering, Bengaluru — Amrita Vishwa Vidyapeetham
+
+## Code
+
+Permission is granted to use, copy, modify and distribute the source code in this
+repository **for non-commercial academic research and education**, provided that
+this notice is retained and any derivative work cites the project.
+
+Commercial use of the code requires prior written permission from the authors.
+
+## Data and model weights
+
+This repository does **not** redistribute the Derm1M dataset or the DermLIP model
+weights. If you obtain them, their original licenses apply:
+
+- **Derm1M** — CC BY-NC 4.0 (non-commercial)
+- **DermLIP ViT-B-16** — CC BY-NC-ND 4.0 (non-commercial, no derivatives)
+
+## No medical use
+
+This is a research prototype. It is **not a medical device**, has not been
+clinically validated, and must not be used for diagnosis, treatment, or any
+individual medical decision.
+
+## No warranty
+
+The software is provided "as is", without warranty of any kind, express or
+implied, including but not limited to the warranties of merchantability,
+fitness for a particular purpose and non-infringement.

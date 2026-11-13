@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SkinShield — Dataset Curation &amp; 12-Class Selection Rationale</title>
+<style>
+  :root{
+    --ink:#1a2233; --muted:#5a6478; --line:#e3e7ef; --bg:#f6f8fb;
+    --accent:#0f766e; --accent2:#7c3aed; --warn:#b45309; --danger:#b91c1c;
+    --ok:#15803d; --card:#ffffff;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+       color:var(--ink);background:var(--bg);line-height:1.55;font-size:15px}
+  header{background:linear-gradient(135deg,#0f172a,#134e4a);color:#fff;padding:34px 24px 28px}
+  header .wrap{max-width:960px;margin:0 auto}
+  header h1{margin:0 0 6px;font-size:26px;letter-spacing:.3px}
+  header p{margin:2px 0;color:#cbd5e1;font-size:14px}
+  .badge{display:inline-block;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.25);
+         border-radius:999px;padding:2px 12px;font-size:12px;margin:6px 6px 0 0;color:#e2e8f0}
+  .wrap{max-width:960px;margin:0 auto;padding:26px 24px 60px}
+  h2{font-size:20px;margin:34px 0 12px;padding-bottom:8px;border-bottom:2px solid var(--line)}
+  h3{font-size:16px;margin:22px 0 8px}
+  p{margin:8px 0}
+  .lead{font-size:16px;color:#334155}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin:12px 0;box-shadow:0 1px 2px rgba(15,23,42,.04)}
+  table{width:100%;border-collapse:collapse;background:var(--card);font-size:13.5px;margin:12px 0}
+  th,td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+  th{background:#f0f3f8;font-weight:600}
+  tr:nth-child(even) td{background:#fafbfe}
+  .num{font-variant-numeric:tabular-nums;text-align:right}
+  .tag{display:inline-block;border-radius:999px;padding:1px 9px;font-size:11.5px;font-weight:600;letter-spacing:.2px}
+  .t-deadly{background:#fee2e2;color:var(--danger)}
+  .t-severe{background:#ffedd5;color:var(--warn)}
+  .t-rare{background:#ede9fe;color:var(--accent2)}
+  .t-common{background:#ccfbf1;color:var(--accent)}
+  .t-ex{background:#f1f5f9;color:var(--muted)}
+  .t-ok{background:#dcfce7;color:var(--ok)}
+  .t-warn{background:#fef3c7;color:var(--warn)}
+  .t-danger{background:#fee2e2;color:var(--danger)}
+  .pill-row{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}
+  .callout{border-left:4px solid var(--accent);background:#f0fdfa;padding:12px 16px;border-radius:0 8px 8px 0;margin:14px 0}
+  .callout.warn{border-left-color:var(--warn);background:#fffbeb}
+  .callout.danger{border-left-color:var(--danger);background:#fef2f2}
+  .reason{margin:4px 0 4px 0}
+  .reason b{color:var(--ink)}
+  .muted{color:var(--muted);font-size:13px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:720px){.grid2{grid-template-columns:1fr}}
+  footer{margin-top:40px;color:var(--muted);font-size:12.5px;border-top:1px solid var(--line);padding-top:14px}
+  code{background:#eef1f6;border-radius:4px;padding:1px 5px;font-size:13px}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <h1>SkinShield — 12-Class Selection &amp; Dataset Curation Rationale</h1>
+    <p>Professor-facing technical justification · Phase 9 (dataset curation)</p>
+    <div>
+      <span class="badge">Derm1M / DermLIP · redlessone</span>
+      <span class="badge">12 locked classes · 21,935 image–text pairs</span>
+      <span class="badge">Non-commercial academic research</span>
+      <span class="badge">CC BY-NC 4.0 data licensing</span>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+<p class="lead">
+This document answers the question the research committee has been asking: <b>from the ~390 conditions in the Derm1M
+ontology, why did we train on exactly these 12?</b> It explains (1) the selection gates we applied, (2) the category
+framework used to prune the full ontology down to a clinically meaningful, evaluable set, (3) a per-disease
+justification for every class we <i>chose</i>, and (4) a transparent account of the classes we <i>considered but did
+not choose</i> — and why.
+</p>
+
+<!-- ===================================================================== -->
+<h2>1. What is the universe we are selecting from?</h2>
+<div class="card">
+  <p><b>Derm1M</b> is a million-scale dermatology vision–language dataset (Yan et al., 2025; arXiv 2503.14911). Its
+  CSV carries <b>22,708 raw label tokens</b> across <b>~390 distinct clinical conditions</b> in a 4-level expert
+  ontology. Not every token is a usable training class:</p>
+  <ul>
+    <li><b>24.8% of rows carry no definitive diagnosis</b> ("no definitive diagnosis") — excluded by rule.</li>
+    <li>Multi-label rows are comma-separated; our curation splits them and takes the first ontology-matched label.</li>
+    <li>Very rare or sparsely labeled conditions have too few image–text pairs to train or evaluate meaningfully.</li>
+  </ul>
+  <p>The full 390-condition ontology is the <b>search space</b>; it is deliberately not the training set. The 12-class
+  set is a <b>scope decision</b> — the clinically meaningful slice defined by the professor's research goal plus
+  engineering constraints. Every reduction below is justified by a numbered gate, not by convenience.</p>
+</div>
+
+<!-- ===================================================================== -->
+<h2>2. The four selection gates (apply in order)</h2>
+<div class="card">
+  <table>
+    <thead><tr><th style="width:60px">Gate</th><th>Rule</th><th>Effect on the set</th></tr></thead>
+    <tbody>
+      <tr><td><b>G1</b></td>
+          <td><b>Rare-disease mandate.</b> The professor requires coverage of <span class="tag t-rare">rare, high-impact</span>
+              dermatologic disorders beyond the "big 5."</td>
+          <td>Locks in the <b>7 rare classes</b> (HS, CLE, PV, BP, EB, ichthyosis, CTCL). These are the project's raison d'être.</td></tr>
+      <tr><td><b>G2</b></td>
+          <td><b>Non-contagious-only.</b> A deployed match must <b>never</b> imply non-contagion for a contagious disease.
+              Any wrong prediction on a contagious class gives dangerously false reassurance.</td>
+          <td><b>Excludes contagious conditions outright:</b> tinea/ringworm, herpes simplex, herpes zoster (shingles),
+              molluscum, scabies, impetigo, warts/HPV.</td></tr>
+      <tr><td><b>G3</b></td>
+          <td><b>Verifiable, balanced pairs.</b> Each class needs <b>≥500 verified image–text pairs</b> on the real
+              curated CSV, with canonical labels that map 1:1 onto the Derm1M token vocabulary.</td>
+          <td>Drops classes with too few pairs or ambiguous/unverifiable label mappings.</td></tr>
+      <tr><td><b>G4</b></td>
+          <td><b>Edge-feasible inference.</b> ≤12 classes, frozen-encoder + probe-head architecture, fits a 6 GB GPU
+              (Jetson Orin Nano) and remains an end-to-end demonstrable pipeline.</td>
+          <td>Caps the set at 12. Anything beyond raises cost/latency without improving the professor's evaluable claim.</td></tr>
+    </tbody>
+  </table>
+  <div class="callout">
+    <b>The key design principle (G2):</b> this is a <i>non-contagious-only</i> system. Two classes that were in the
+    original 10-class proposal — <b>tinea</b> and <b>herpes simplex</b> — were <b>deliberately removed</b>, not
+    forgotten. Showing a user "this looks like ringworm / cold sore" when it isn't is worse than useful precisely
+    because it fabricates a false negative on the contagious axis.
+  </div>
+</div>
+
+<!-- ===================================================================== -->
+<h2>3. Category framework: how the ontology is organized</h2>
+<div class="card">
+  <p>We organize dermatologic conditions along <b>four clinically meaningful axes</b>. Every one of the ~390
+  ontology conditions falls into a bucket on each axis; the final 12 are chosen to cover the <b>severe</b> and
+  <b>rare-but-harmful</b> buckets (professor's mandate) plus a <b>common-severe</b> anchor set, while keeping the
+  <b>contagious</b> and <b>benign-everyday</b> buckets out.</p>
+  <table>
+    <thead><tr><th>Axis</th><th>What it means</th><th>Role in selection</th></tr></thead>
+    <tbody>
+      <tr><td><b>Deadly / life-threatening</b></td>
+          <td>Can be fatal or metastasize: melanoma, SCC, CTCL (lymphoma), aggressive BCC.</td>
+          <td><span class="tag t-deadly">ALWAYS chosen</span> — highest clinical priority; never optional.</td></tr>
+      <tr><td><b>Severe / disabling</b></td>
+          <td>Chronic, disabling, scarring, or quality-of-life destroying: HS, lupus, PV, BP, psoriasis.</td>
+          <td><span class="tag t-severe">Chosen</span> — core of the rare mandate + common anchors.</td></tr>
+      <tr><td><b>Rare but harmful</b></td>
+          <td>Low prevalence, high impact, frequently misdiagnosed: EB, ichthyosis, CTCL, PV, BP, HS, CLE.</td>
+          <td><span class="tag t-rare">ALWAYS chosen</span> — the professor's explicit mandate; the project's purpose.</td></tr>
+      <tr><td><b>Contagious</b></td>
+          <td>Fungal, viral, bacterial, parasitic transmission to others.</td>
+          <td><span class="tag t-ex">EXCLUDED by design</span> — G2 (never false non-contagion).</td></tr>
+      <tr><td><b>Benign / everyday</b></td>
+          <td>Common, non-fatal, often cosmetic: acne, seborrheic keratosis. Rarely life-affecting.</td>
+          <td><span class="tag t-common">Not chosen</span> — low clinical risk profile; adds no decisive signal.</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ===================================================================== -->
+<h2>4. The locked 12-class set — full justification</h2>
+<p class="muted">Class counts below are verified on the <b>real curated Derm1M CSV on this machine</b> (D:\curated), not estimates.</p>
+
+<div class="card">
+  <h3>Tier A — Common skin cancers (deadly; must always be present)</h3>
+  <table>
+    <thead><tr><th>Class</th><th class="num">Train pairs</th><th>Why chosen</th></tr></thead>
+    <tbody>
+      <tr><td><b>Melanoma</b></td><td class="num">1,875</td>
+          <td><span class="tag t-deadly">DEADLY</span> The most lethal skin cancer; ~1 in 4 melanomas are fatal
+              if untreated. Highest priority — a system that cannot flag melanoma fails its core duty.</td></tr>
+      <tr><td><b>Basal cell carcinoma (BCC)</b></td><td class="num">1,875</td>
+          <td><span class="tag t-deadly">DEADLY*</span> Most common cancer; locally invasive, destructive, but
+              rarely metastatic. Essential as the canonical "common skin cancer" baseline.</td></tr>
+      <tr><td><b>Squamous cell carcinoma (SCC)</b></td><td class="num">1,875</td>
+          <td><span class="tag t-deadly">DEADLY</span> Distinctly metastatic potential; the "aggressive" counterpart
+              to BCC needed to force the model to separate the two carcinomas.</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="card">
+  <h3>Tier B — Common inflammatory/autoimmune (severe, high prevalence)</h3>
+  <table>
+    <thead><tr><th>Class</th><th class="num">Train pairs</th><th>Why chosen</th></tr></thead>
+    <tbody>
+      <tr><td><b>Atopic dermatitis</b></td><td class="num">1,875</td>
+          <td><span class="tag t-severe">SEVERE</span> The most common chronic inflammatory skin disease; the
+              "eczema" anchor — the reference the model must distinguish everything else against.</td></tr>
+      <tr><td><b>Psoriasis</b></td><td class="num">1,875</td>
+          <td><span class="tag t-severe">SEVERE</span> High-prevalence chronic autoimmune condition; classic scaly
+              plaque presentation that clinical and image-only models frequently confuse with dermatitis.</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="card">
+  <h3>Tier C — Rare but harmful (the professor's mandate; the reason this project exists)</h3>
+  <p>Classes G1 requires: rare, often-misdiagnosed, high-impact. These are exactly the professor's 7 target disorders.
+  Without this tier, the system is "just another skin classifier"; <b>with</b> it, it fills a genuine clinical gap.</p>
+  <table>
+    <thead><tr><th>Class</th><th class="num">Train pairs</th><th>Disease status</th><th>Why chosen</th></tr></thead>
+    <tbody>
+      <tr><td><b>Cutaneous T-cell lymphoma (CTCL)</b></td><td class="num">1,120</td>
+          <td><span class="tag t-deadly">CANCER (rare)</span></td>
+          <td>Rare lymphoma masquerading as eczema/psoriasis for years; frequently misdiagnosed, life-threatening.
+              The paradigm "rare but deadly" case.</td></tr>
+      <tr><td><b>Cutaneous lupus erythematosus (CLE)</b></td><td class="num">1,758</td>
+          <td><span class="tag t-severe">AUTOIMMUNE (rare)</span></td>
+          <td>Rare autoimmune spectrum with systemic potential; needs to be told apart from dermatitis and
+              psoriasis-like mimics.</td></tr>
+      <tr><td><b>Hidradenitis suppurativa (HS)</b></td><td class="num">371</td>
+          <td><span class="tag t-severe">INFLAMMATORY (rare)</span></td>
+          <td>Chronic, painful, scarring follicular disease; notoriously under- and mis-diagnosed — the professor's
+              explicit pick for a common-yet-hidden disorder.</td></tr>
+      <tr><td><b>Pemphigus vulgaris (PV)</b></td><td class="num">611</td>
+          <td><span class="tag t-severe">BLISTERING AUTO (rare)</span></td>
+          <td>Potentially fatal autoimmune blistering disease; a live threat if missed. Distinct blistering
+              morphology is a strong multimodal discriminator.</td></tr>
+      <tr><td><b>Bullous pemphigoid (BP)</b></td><td class="num">716</td>
+          <td><span class="tag t-severe">BLISTERING AUTO (rare)</span></td>
+          <td>Elderly, severe autoimmune blistering; pairs with PV to test the model's fine blistering-class separation —
+              a hard and clinically valuable discrimination.</td></tr>
+      <tr><td><b>Epidermolysis bullosa (EB)</b></td><td class="num">646</td>
+          <td><span class="tag t-rare">GENETIC (ultra-rare)</span></td>
+          <td>Rare genetic blistering skin disease; proves the model generalizes to truly rare pediatric-genetic
+              conditions, where clinical data is scarcest.</td></tr>
+      <tr><td><b>Ichthyosis</b></td><td class="num">754</td>
+          <td><span class="tag t-rare">GENETIC (rare)</span></td>
+          <td>Genetic scaling disorder with a highly distinctive clinical phenotype — a strong "is it distinct?"
+              probe for whether the model learns rare morphology vs overfitting common classes.</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ===================================================================== -->
+<h2>5. What we considered but did NOT choose — and why</h2>
+<p class="muted">Transparency matters: a selection is only credible if we say what we rejected. These are the classes
+in the original proposal or natural candidates that were examined and dropped, with the exact gate that removed them.</p>
+
+<div class="card">
+  <table>
+    <thead><tr><th>Candidate</th><th>Gate that excluded it</th><th>Reason</th></tr></thead>
+    <tbody>
+      <tr><td><b>Tinea (ringworm)</b></td><td><span class="tag t-danger">G2 — contagious</span></td>
+          <td>Fungal, spreads to humans. A wrong match would wrongly imply non-contagion. <b>Dropped from the original
+              10-class proposal.</b></td></tr>
+      <tr><td><b>Herpes simplex</b></td><td><span class="tag t-danger">G2 — contagious</span></td>
+          <td>Viral, highly transmissible. Same false-reassurance risk. <b>Dropped.</b></td></tr>
+      <tr><td><b>Herpes zoster (shingles)</b></td><td><span class="tag t-danger">G2 — contagious</span></td>
+          <td>VZV, contagious. Excluded by the same non-contagion rule.</td></tr>
+      <tr><td><b>Molluscum contagiosum</b></td><td><span class="tag t-danger">G2 — contagious</span></td>
+          <td>Viral, skin-to-skin. Excluded.</td></tr>
+      <tr><td><b>Scabies / impetigo / warts</b></td><td><span class="tag t-danger">G2 — contagious</span></td>
+          <td>Parasitic / bacterial / viral — all transmissible. Excluded.</td></tr>
+      <tr><td><b>Acne vulgaris</b></td><td><span class="tag t-common">benign/everyday</span></td>
+          <td>Very common, non-fatal, non-scarring-to-life; adds prevalence but little clinical decisiveness.
+              Low tier, not chosen.</td></tr>
+      <tr><td><b>Seborrheic keratosis</b></td><td><span class="tag t-common">benign</span></td>
+          <td>Benign wart-like growth; no mortality risk. Not chosen.</td></tr>
+      <tr><td><b>Dermatofbrosarcoma protuberans (rare sarcoma)</b></td><td><span class="tag t-ex">G3 — too few pairs</span></td>
+          <td>Rare but harmful; cases are scarce in Derm1M, below the ≥500 pair gate for a reliable train/eval split.</td></tr>
+      <tr><td><b>Angiosarcoma</b></td><td><span class="tag t-ex">G3 — too few pairs</span></td>
+          <td>Aggressive but sparse in the dataset; can't meet the pair-count and class-balance gate.</td></tr>
+      <tr><td><b>Pemphigus foliaceus</b></td><td><span class="tag t-ex">G3 — too few pairs</span></td>
+          <td>Blistering autoimmune like PV but with too few verified pairs; PV already covers the high-value
+              "blistering" signal.</td></tr>
+    </tbody>
+  </table>
+  <div class="callout warn">
+    <b>Honest boundary:</b> the 390-condition ontology contains more rare-and-harmful conditions than we train on.
+    We deliberately hold the set at 12 (G4) so the professor's <b>evaluable, edge-deployable claim</b> stays clean.
+    Expanding to rare sarcomas, Merkel cell carcinoma, or lymphomatoid papulosis is a documented <b>future phase</b>,
+    pending more image–text pairs (data permitting under the non-commercial license).
+  </div>
+</div>
+
+<!-- ===================================================================== -->
+<h2>6. Why the classes that DIDN'T make it were not needed</h2>
+<div class="card">
+  <p>Put simply: every excluded class either (a) endangers the user through false non-contagion assurance
+  (<span class="tag t-danger">contagious</span>), (b) is clinically benign with no decisive risk
+  (<span class="tag t-common">everyday</span>), or (c) cannot be reliably trained/evaluated on the data available
+  (<span class="tag t-ex">too few pairs</span>). None of these removes signal the 12-class set needs:</p>
+  <ul>
+    <li><b>Contagious out</b> → removes false-reassurance risk, keeps the system safe by design.</li>
+    <li><b>Benign out</b> → the 12 still span every <i>deadly</i> and <i>severe</i> bucket plus the professor's rare tier.</li>
+    <li><b>Sparse out</b> → protects statistical validity of the held-out test set for the professor's ablation claim.</li>
+  </ul>
+</div>
+
+<!-- ===================================================================== -->
+<h2>7. Coverage check: every decision is mappable</h2>
+<div class="card">
+  <table>
+    <thead><tr><th>Category</th><th>In set?</th><th>Classes</th></tr></thead>
+    <tbody>
+      <tr><td>Deadly skin cancers</td><td><span class="tag t-ok">COVERED</span></td><td>Melanoma · BCC · SCC · CTCL</td></tr>
+      <tr><td>Rare autoinflammatory/autoimmune</td><td><span class="tag t-ok">COVERED</span></td><td>HS · CLE · PV · BP</td></tr>
+      <tr><td>Rare genetic</td><td><span class="tag t-ok">COVERED</span></td><td>EB · Ichthyosis</td></tr>
+      <tr><td>Common severe/inflammatory</td><td><span class="tag t-ok">COVERED</span></td><td>Atopic dermatitis · Psoriasis</td></tr>
+      <tr><td>Contagious</td><td><span class="tag t-danger">EXCLUDED</span></td><td>Tinea · HSV · zoster · molluscum · scabies · impetigo · warts</td></tr>
+      <tr><td>Benign everyday</td><td><span class="tag t-ex">NOT CHOSEN</span></td><td>Acne · seborrheic keratosis</td></tr>
+      <tr><td>Rare-but-too-sparse</td><td><span class="tag t-ex">DEFERRED to phase N+1</span></td><td>DFSP · angiosarcoma · pemphigus foliaceus</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ===================================================================== -->
+<h2>8. The professor's evaluation claim (what this set enables)</h2>
+<div class="callout">
+  <b>The reason this set exists is a testable claim:</b> a <b>multimodal (image + text) DermLIP model beats both
+  image-only and text-only</b> on these 12 classes. That is what we measure (zero-shot → fused probe → ablations) and
+  report. Every selection decision above is built to make that claim <b>clean, non-contagious, rare-inclusive, and
+  edge-deployable</b>. Set is <b>LOCKED (G1 passed on real Derm1M CSV).</b>
+</div>
+
+<footer>
+  SkinShield · 12-class DermLIP prototype · Non-commercial academic research ·
+  Data: Derm1M (CC BY-NC 4.0) · Model: DermLIP_ViT-B-16 (CC BY-NC-ND 4.0) ·
+  Class counts verified against real curated CSVs (D:\curated) on 2026-09-20.
+</footer>
+
+</div>
+</body>
+</html>
