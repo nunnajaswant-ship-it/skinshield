@@ -70,7 +70,14 @@ The sensor stream is served through a **Flask web dashboard** for live monitorin
 
 ## Architecture
 
+<p align="center">
+  <img src="docs/architecture.png" alt="SkinShield system architecture: dataset preparation, model research, triage device, research artifacts and edge deployment" width="100%">
+</p>
+
+*End-to-end system map. Dataset preparation feeds DermLIP training; the model-research scripts write into a shared research-artifacts store; the triage device combines patient/worker inputs with sensor readings; and the exported inference graphs run in the edge runtime.*
+
 ```
+
 ┌──────────────────────┐   ┌──────────────────────┐   ┌──────────────────────┐
 │ MULTIMODAL DATA      │ → │ PREPROCESSING        │ → │ SENSOR CONDITIONING  │
 │ COLLECTION           │   │ image + text         │   │ temp, moisture,      │
