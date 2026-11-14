@@ -8,8 +8,8 @@ SkinShield runs on a commodity edge board with a camera, a microphone and four s
 |---|---|
 | Board | **Raspberry Pi 4B** (4 GB or 8 GB) |
 | Alternative | NVIDIA Jetson Orin Nano (higher throughput) |
-| Camera | Raspberry Pi Camera Module / USB camera |
-| Microphone | USB microphone or I2S MEMS microphone |
+| Camera | Raspberry Pi Camera Module (e.g. Camera Module 3) on the CSI ribbon |
+| Microphone | Analog **MIC module** (VCC / GND / OUT) on the ADC, or a USB microphone |
 | Power | 5 V / 3 A USB-C supply, battery pack for field use |
 
 ## Sensors
@@ -25,12 +25,14 @@ SkinShield runs on a commodity edge board with a camera, a microphone and four s
 
 ```
 Raspberry Pi 4B
+├── CSI   → Camera Module (image input)
 ├── GPIO  → temperature sensor (data)
 ├── I2C   → BH1750 (light), TCS34725 (colour)
-├── ADC   → capacitive moisture sensor
-├── CSI   → camera module
-└── USB   → microphone
+├── ADC   → capacitive moisture sensor, MIC module OUT (text input)
+└── GND/VCC rail → all modules
 ```
+
+All modules sit on a single breadboard, so the whole rig is one self-contained unit.
 
 ## Dashboard
 
@@ -61,14 +63,15 @@ Together with the photograph and the patient's description, they form the three-
 
 | File | Shows |
 |---|---|
-| `raspberry_pi_sensor_rig.jpeg` | Raspberry Pi 4B with the four labelled sensors |
+| `raspberry_pi_sensor_rig.png` | Full annotated rig: Raspberry Pi 4B, Camera Module, MIC module, moisture, temperature, light and colour sensors |
 | `esp32_sensor_rig.jpeg` | Earlier ESP32 prototype on a perfboard |
 | `dashboard.jpeg` | Live Flask dashboard running on the Pi |
 
 ## Status
 
 - [x] Sensor rig assembled and reading live data
+- [x] Camera Module and MIC module wired to the same Pi (bench setup)
 - [x] Flask dashboard operational
-- [ ] Camera + microphone integrated into the same enclosure
+- [ ] Camera + microphone integrated into a single enclosure
 - [ ] Model deployed on-device (ONNX / TensorRT)
 - [ ] Field pilot

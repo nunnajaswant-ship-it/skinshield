@@ -16,9 +16,9 @@ SkinShield is a portable, Raspberry Pi-based IoT device that combines **three in
 The system is built for the last mile: a primary health centre, a village clinic, or a field kit where no dermatologist is available.
 
 <p align="center">
-  <img src="hardware/raspberry_pi_sensor_rig.jpeg" alt="Raspberry Pi 4B with temperature, moisture, light and colour sensors" width="620">
+  <img src="hardware/raspberry_pi_sensor_rig.png" alt="Annotated Raspberry Pi 4B sensor setup: camera module, microphone module, moisture sensor, temperature sensor, light sensor and colour sensor wired through a breadboard" width="880">
   <br>
-  <em>Existing hardware prototype: Raspberry Pi 4B + four skin/environment sensors</em>
+  <em>Existing hardware prototype: Raspberry Pi 4B with a camera module, a microphone module and four skin/environment sensors - all three input modalities on one board</em>
 </p>
 
 ---
@@ -50,7 +50,7 @@ SkinShield is deliberately **multimodal**. A single photograph is often ambiguou
 
 ### The sensor rig
 
-The existing prototype uses a **Raspberry Pi 4B** with four sensors:
+The existing prototype is a **Raspberry Pi 4B** carrying a camera module, a microphone module and four sensors - all three input modalities on a single board.
 
 | Sensor | Measures | Relevance |
 |---|---|---|
@@ -58,6 +58,13 @@ The existing prototype uses a **Raspberry Pi 4B** with four sensors:
 | Moisture | Surface hydration | Eczema, xerosis, barrier integrity |
 | Light | Incident light intensity | UV exposure, lesion visibility |
 | Colour (TCS34725 RGB) | Red / green / blue reflectance | Erythema, pigmentation, blanching |
+
+Paired with those sensors on the same Pi:
+
+| Module | Captures | Feeds |
+|---|---|---|
+| Camera Module (e.g. Camera Module 3) | Dermatological photograph of the lesion | Image tower |
+| Microphone (MIC module) | The patient's spoken or written symptom description | Text tower |
 
 The sensor stream is served through a **Flask web dashboard** for live monitoring and threshold-based classification.
 
@@ -218,7 +225,7 @@ skinshield/
 │   ├── Nunna_Jaswanth_Sriram_CV.pdf
 │   └── Dr_K_Deepa_CV.pdf
 ├── hardware/
-│   ├── raspberry_pi_sensor_rig.jpeg
+│   ├── raspberry_pi_sensor_rig.png
 │   ├── esp32_sensor_rig.jpeg
 │   ├── dashboard.jpeg
 │   └── HARDWARE.md
